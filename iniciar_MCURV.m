@@ -18,3 +18,6 @@ addpath('mcurv/section');
 
 % Agrega los test al path
 addpath('test');
+addpath('test/analysis');
+addpath('test/material');
+addpath('test/section');
