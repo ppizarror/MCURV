@@ -21,22 +21,38 @@
 %| deformacion.                                                         |
 %|______________________________________________________________________|
 
-classdef GenericMaterial
- 
-    properties(Access = public)
-        Property1
-    end
+classdef GenericMaterial < BaseModel
     
     methods(Access = public)
-        function obj = GenericMaterial(tag)
-            % 
-            obj.Property1 = inputArg1 + inputArg2;
-        end
         
-        function outputArg = method1(obj, inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
-        end
-    end
-end
+        function obj = GenericMaterial(matName)
+            % GenericMaterial: Constructor de la clase
+            obj = obj@BaseModel(matName);
+        end % GenericMaterial constructor
+        
+        function [f, E] = eval(obj, e) %#ok<*INUSL>
+            % eval: Retorna la tension y el modulo elastico tangente del
+            % material a un cierto nivel de deformacion
+            f = 0 * e;
+            E = 0;
+        end % eval function
+        
+        function plt = plot(obj, varargin) %#ok<*VANUS>
+            % plot: Grafica el material
+            plt = 0;
+        end % plot function
+        
+        function t = getTensionDeformation(obj, varargin) %#ok<*INUSD>
+            % getTensionDeformation: Obtiene una tabla de tensiones
+            % deformaciones del material
+            t = [0, 0];
+        end % getTensionDeformation function
+        
+        function disp(obj)
+            % disp: Imprime la informacion del objeto en consola
+            disp@BaseModel(obj);
+        end % disp function
+        
+    end % public methods
+    
+end % GenericMaterial class
