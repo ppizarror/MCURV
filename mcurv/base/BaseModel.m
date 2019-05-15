@@ -17,6 +17,10 @@
 %| Definicion de un modelo u elemento basico de la plataforma, posee    |
 %| funciones generales para definir objetos con nombres e identificado- |
 %| res.                                                                 |
+%|                                                                      |
+%| Autor: Pablo Pizarro R. @ppizarror.com                               |
+%| Licencia: MIT                                                        |
+%| Codigo fuente: https://github.com/ppizarror/MCURV                    |
 %|______________________________________________________________________|
 
 classdef BaseModel
@@ -31,26 +35,34 @@ classdef BaseModel
         function obj = BaseModel(name)
             % BaseModel: Crea un modelo basico, requiere el nombre del
             % objeto
+            
             if ~exist('name', 'var')
                 name = 'Undefined';
             end
             obj.objName = name;
             obj.objID = char(java.util.UUID.randomUUID);
+            
         end % BaseModel constructor
         
         function name = getName(obj)
             % getName: Retorna el nombre del objeto
+            
             name = obj.objName;
+            
         end % getName function
         
         function e = equals(obj, b)
             % equals: Verifica que el objeto sea identico a otro
+            
             e = strcmp(obj.objID, b.objID);
+            
         end % equals function
         
         function disp(obj)
             % disp: Imprime la informacion del objeto en la consola
+            
             fprintf('\tEtiqueta: %s\n', obj.objName);
+            
         end % disp function
         
     end % public methods
