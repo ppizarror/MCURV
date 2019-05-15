@@ -50,7 +50,7 @@ classdef BaseModel
         
         function disp(obj)
             % disp: Imprime la informacion del objeto en la consola
-            fprintf('Etiqueta: %s\n', obj.objName);
+            fprintf('\tEtiqueta: %s\n', obj.objName);
         end % disp function
         
     end % public methods

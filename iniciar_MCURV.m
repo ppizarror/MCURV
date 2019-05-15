@@ -16,6 +16,8 @@ addpath('mcurv/analysis');
 addpath('mcurv/base');
 addpath('mcurv/lib');
 addpath('mcurv/material');
+addpath('mcurv/material/concrete');
+addpath('mcurv/material/steel');
 addpath('mcurv/section');
 addpath('mcurv/utils');
 
