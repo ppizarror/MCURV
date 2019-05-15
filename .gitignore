@@ -1,0 +1,25 @@
+# Archivos residuales
+*.asv
+
+# Ignora archivos idea
+*.idea
+
+# Otros
+*.pdf
+.vscode/
+dev/
+
+# SAP2000
+*.sdb
+*.sbk
+*.msh
+*.ico
+*.Y*
+*.K*
+*.$*
+*.LOG
+*.OUT
+
+# Salidas
+test/*out*
+test/**/*.gif
