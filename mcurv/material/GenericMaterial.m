@@ -37,6 +37,7 @@ classdef GenericMaterial < BaseModel
             % GenericMaterial: Constructor de la clase
             
             obj = obj@BaseModel(matName);
+            obj.materialColor = [0, 0, 0];
             
         end % GenericMaterial constructor
         
@@ -71,7 +72,7 @@ classdef GenericMaterial < BaseModel
             p.addOptional('emax', 1);
             p.addOptional('emin', -1);
             p.addOptional('gridColor', [0.5, 0.5, 0.5]);
-            p.addOptional('gridLineWidth', 1);
+            p.addOptional('gridLineWidth', 0.5);
             p.addOptional('gridStyle', '--');
             p.addOptional('legend', 'off');
             p.addOptional('limMargin', 0.1);
@@ -87,7 +88,7 @@ classdef GenericMaterial < BaseModel
             % Crea la particion del espacio
             ex = linspace(r.emin, r.emax, r.npoints)';
             
-            % Calcula la tension o elasticidad
+            % Calcula la tension/elasticidad
             if strcmp(r.plotType, 'tension')
                 [fx, ~] = obj.eval(ex);
                 plotTitle = sprintf('%s - Tension', obj.getName());
@@ -110,10 +111,11 @@ classdef GenericMaterial < BaseModel
             
             % Grafica
             plot(ex, fx, 'LineWidth', r.lineWidth, 'Color', r.lineColor);
+            lims = get(gca, 'ylim') .* (1 + r.limMargin);
             hold on;
             plot([min(ex), max(ex)], [0, 0], r.gridStyle, ...
                 'Color', r.gridColor, 'LineWidth', r.gridLineWidth);
-            plot([0, 0], [min(fx), max(fx)], r.gridStyle, ...
+            plot([0, 0], lims, r.gridStyle, ...
                 'Color', r.gridColor, 'LineWidth', r.gridLineWidth);
             plot(ex, fx, 'LineWidth', r.lineWidth, 'Color', r.lineColor);
             
@@ -121,7 +123,6 @@ classdef GenericMaterial < BaseModel
             grid minor;
             
             % Aplica limites
-            lims = get(gca, 'ylim') .* (1 + r.limMargin);
             ylim(lims);
             
             title(plotTitle);

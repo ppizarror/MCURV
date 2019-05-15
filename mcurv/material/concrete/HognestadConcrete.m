@@ -12,49 +12,48 @@
 %| calculo no lineal Newton-Raphson.                                    |
 %|______________________________________________________________________|
 %|                                                                      |
-%| ElastoplasticSteel                                                   |
+%| HognestadConcrete                                                    |
 %|                                                                      |
-%| Definicion de acero elastoplastico, con endurecimiento por deforma-  |
-%| cion bilineal.                                                       |
+%| Definicion de material de hormigon con modelo Hognestad.             |
 %|                                                                      |
 %| Autor: Pablo Pizarro R. @ppizarror.com                               |
 %| Licencia: MIT                                                        |
 %| Codigo fuente: https://github.com/ppizarror/MCURV                    |
 %|______________________________________________________________________|
 
-classdef ElastoplasticSteel < GenericMaterial
+classdef HognestadConcrete < GenericMaterial
     
     properties(Access = protected)
-        fy % Tension de fluencia del acero
-        Es1 % Modulo elastico
-        Es2 % Modulo elastico plastificado
-        ey % Deformacion de fluencia del acero
-        eu % Deformacion ultima del acero
+        fc % Tension de rotura
+        Ec % Modulo elastico en compresion
+        fr % Tension maxima de rotura en traccion
+        er % Deformacion de traccion
+        eo % Deformacion a resistencia maxima
+        eu % Deformacion ultima
     end % protected properties
     
     methods(Access = public)
         
-        function obj = ElastoplasticSteel(matName, fy, Es1, Es2, eu)
-            % ElastoplasticSteel: Constructor de la clase
+        function obj = HognestadConcrete(matName, fc, eo)
+            % HognestadConcrete: Constructor de la clase
             %
             % Parametros:
-            %   fy      Tension de fluencia
-            %   Es1     Modulo de rigidez elastico
-            %   Es2     Modulo de rigidez post fluencia
-            %   eu      Deformacion ultima [-]
+            %   fc      Resistencia a compresion (f'c)
+            %   eo      Deformacion a resistencia maxima
             
-            if nargin ~= 5
+            if nargin ~= 3
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'ElastoplasticSteel(matName, fy, Es1, Es2, eu)');
+                    'HognestadConcrete(matName, fc, eo)');
             end
             obj = obj@GenericMaterial(matName);
-            obj.ey = fy / Es1;
-            obj.fy = fy;
-            obj.Es1 = Es1;
-            obj.Es2 = Es2;
-            obj.eu = eu;
+            obj.fc = fc;
+            obj.eo = eo;
+            obj.fr = 0.62 * sqrt(fc);
+            obj.Ec = 4700 * sqrt(fc);
+            obj.er = -obj.fr / obj.Ec;
+            obj.eu = 2 * eo;
             
-        end % ElastoplasticSteel constructor
+        end % HognestadConcrete constructor
         
         function [f, E] = eval(obj, e)
             % eval: Retorna la tension y el modulo elastico tangente del
@@ -64,18 +63,19 @@ classdef ElastoplasticSteel < GenericMaterial
             n = length(e); % Largo del vector
             f = zeros(n, 1);
             E = zeros(n, 1);
-
+            
             % Deterimina rango
             for i = 1:n
-                esi = abs(e(i));
-                sgn = sign(e(i));
-                if (0 <= esi) && (esi < obj.ey) % Rango elastico
-                    f(i) = obj.Es1 * esi * sgn;
-                    E(i) = obj.Es1;
-                elseif (obj.ey <= esi) && (esi < obj.eu) % Rango post fluencia
-                    f(i) = (obj.fy + obj.Es2 * (esi-obj.ey)) * sgn;
-                    E(i) = obj.Es2;
-                else % Rotura
+                if e(i) < obj.er % Sobrepasa a rotura
+                    f(i) = 0;
+                    E(i) = 0;
+                elseif (obj.er <= e(i)) && (e(i) < 0) % Tension
+                    f(i) = obj.Ec * e(i);
+                    E(i) = obj.Ec;
+                elseif (0 <= e(i)) && (e(i) < obj.eu) % Compresion
+                    f(i) = obj.fc * (2 * (e(i) / obj.eo) - (e(i) / obj.eo)^2);
+                    E(i) = 2 * obj.fc * (1 / obj.eo - e(i) / (obj.eo^2));
+                else % Sobrepaso compresion
                     f(i) = 0;
                     E(i) = 0;
                 end
@@ -86,15 +86,17 @@ classdef ElastoplasticSteel < GenericMaterial
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
             
-            fprintf('Propiedades acero elastoplastico:\n');
+            fprintf('Propiedades hormigon modelo Hognestad:\n');
             disp@GenericMaterial(obj);
-            fprintf('\tTension de fluencia: %.2f\n', obj.fy);
-            fprintf('\tModulos elasticos:\n\t\tEs1: %.1f\n\t\tEs2: %.1f\n', ...
-                obj.Es1, obj.Es2);
+            fprintf('\tResistencia a compresion fc: %.2f\n', obj.fc);
+            fprintf('\tResistencia a traccion fr: %.2f\n', obj.fr);
+            fprintf('\tModulo elastico a compresion: %.1f\n', obj.Ec);
+            fprintf('\tDeformaciones:\n\t\ter: %.4f\n\t\teo: %.4f\n\t\teu: %.4f\n', ...
+                obj.er, obj.eo, obj.eu);
             dispMCURV();
             
         end % disp function
         
     end % public methods
     
-end % ElastoplasticSteel class
+end % HognestadConcrete class
