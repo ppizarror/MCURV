@@ -45,7 +45,7 @@ classdef HognestadModifiedConcrete < GenericMaterial
             
             if nargin ~= 4
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'HognestadModifiedConcrete(matName, fc, eo, eu)');
+                    'HognestadModifiedConcrete(matName,fc,eo,eu)');
             end
             obj = obj@GenericMaterial(matName);
             obj.fc = fc;

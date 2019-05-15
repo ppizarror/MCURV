@@ -23,7 +23,7 @@
 %| Codigo fuente: https://github.com/ppizarror/MCURV                    |
 %|______________________________________________________________________|
 
-classdef BaseModel
+classdef BaseModel < handle
  
     properties(Access = private)
         objName % Nombre del objeto
@@ -50,6 +50,13 @@ classdef BaseModel
             name = obj.objName;
             
         end % getName function
+        
+        function id = getID(obj)
+            % getName: Retorna el identificador del objeto
+            
+            id = obj.objID;
+            
+        end % getID function
         
         function e = equals(obj, b)
             % equals: Verifica que el objeto sea identico a otro

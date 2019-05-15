@@ -64,7 +64,7 @@ classdef GenericMaterial < BaseModel
             %   lineColor       Color de la linea
             %   lineWidth       Ancho de la linea
             %   npoints         Numero de puntos
-            %   plotType        Tipo de plot 'tension','elastic'
+            %   plotType        Tipo de plot 'stress','elastic'
             %   units           Unidad del grafico
             
             p = inputParser;
@@ -79,7 +79,7 @@ classdef GenericMaterial < BaseModel
             p.addOptional('lineColor', [0, 0, 0]);
             p.addOptional('lineWidth', 2.0);
             p.addOptional('npoints', 1000);
-            p.addOptional('plotType', 'tension');
+            p.addOptional('plotType', 'stress');
             p.addOptional('units', 'MPa');
             parse(p, varargin{:});
             r = p.Results;
@@ -89,11 +89,11 @@ classdef GenericMaterial < BaseModel
             ex = linspace(r.emin, r.emax, r.npoints)';
             
             % Calcula la tension/elasticidad
-            if strcmp(r.plotType, 'tension')
+            if strcmp(r.plotType, 'stress')
                 [fx, ~] = obj.eval(ex);
-                plotTitle = sprintf('%s - Tension', obj.getName());
-                yLabel = sprintf('f - Tension (%s)', r.units);
-                plotLegend = 'Tension-deformacion';
+                plotTitle = sprintf('%s - Esfuerzo', obj.getName());
+                yLabel = sprintf('f - Esfuerzo (%s)', r.units);
+                plotLegend = 'Esfuerzo-deformacion';
             elseif strcmp(r.plotType, 'elastic')
                 [~, fx] = obj.eval(ex);
                 plotTitle = sprintf('%s - Modulo elastico', obj.getName());
@@ -101,7 +101,7 @@ classdef GenericMaterial < BaseModel
                 plotLegend = 'Modulo Elastico-deformacion';
             else
                 error('Tipo de grafico desconocido, valores posibles: %s', ...
-                    'tension, elastic');
+                    'stress,elastic');
             end
             
             % Crea la figura
@@ -135,8 +135,8 @@ classdef GenericMaterial < BaseModel
             
         end % plot function
         
-        function t = getTensionDeformation(obj, varargin)
-            % getTensionDeformation: Obtiene una tabla de tensiones
+        function t = getStressDeformation(obj, varargin)
+            % getStressDeformation: Obtiene una tabla de esfuerzo
             % deformaciones del material
             %
             % Parametros opcionales:
@@ -161,7 +161,7 @@ classdef GenericMaterial < BaseModel
                 t(i, 2) = f(i);
             end
             
-        end % getTensionDeformation function
+        end % getStressDeformation function
         
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola

@@ -51,7 +51,7 @@ classdef ManderSteel < GenericMaterial
             
             if nargin ~= 8
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'ManderSteel(matName, fy, Es, fsu, Esh, esh, esu, ef)');
+                    'ManderSteel(matName,fy,Es,fsu,Esh,esh,esu,ef)');
             end
             obj = obj@GenericMaterial(matName);
             obj.ey = fy / Es;

@@ -45,7 +45,7 @@ classdef ElastoplasticSteel < GenericMaterial
             
             if nargin ~= 5
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'ElastoplasticSteel(matName, fy, Es1, Es2, eu)');
+                    'ElastoplasticSteel(matName,fy,Es1,Es2,eu)');
             end
             obj = obj@GenericMaterial(matName);
             obj.ey = fy / Es1;
