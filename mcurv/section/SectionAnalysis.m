@@ -51,7 +51,7 @@ classdef SectionAnalysis < BaseModel
                     'calc_e0M(section,p,phix,phiy)');
             end
             
-            fprintf('Calculando e0 y M dado arreglo de P y phix,phiy\n');
+            fprintf('Calculando e0 y M dado arreglo de P y phix,phiy:\n');
             fprintf('\tSeccion: %s\n', section.getName());
             
             % Actualiza propiedades

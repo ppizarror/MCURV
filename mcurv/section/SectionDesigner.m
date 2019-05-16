@@ -120,15 +120,15 @@ classdef SectionDesigner < BaseModel
                 y = y + dy;
             end
             
-            % Genera discretizacion densa para los graficos
+            % Genera discretizacion densa, mallado de la geometria
             % dx -> dx/2 y dy -> dy/2
-            nxd = 2 * nx + 1;
-            nyd = 2 * ny + 1;
+            nxd = 2 * max(nx, ny) + 1;
+            nyd = nxd;
             tnd = nxd * nyd; % Puntos totales
             pxd = zeros(tnd, 1); % Puntos en x
             pyd = zeros(tnd, 1); % Puntos en y
-            dxd = dx / 2;
-            dyd = dy / 2;
+            dxd = b / (nxd - 1);
+            dyd = h / (nyd - 1);
             
             y = yc - h / 2;
             k = 1; % Guarda el numero del punto
@@ -162,7 +162,7 @@ classdef SectionDesigner < BaseModel
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'addDiscreteSquare(xc,yc,L,n,material,varargin)');
             end
-            obj.addDiscreteRect(xc,yc,L,L,n,n,material,varargin);
+            obj.addDiscreteRect(xc, yc, L, L, n, n, material, varargin);
             
         end % addDiscreteSquare function
         
@@ -195,8 +195,12 @@ classdef SectionDesigner < BaseModel
             obj.singMat{obj.singTotal} = material;
             obj.singParams{obj.singTotal} = r;
             
+            % Genera el mallado de la geometria
+            px = [x - b / 2, x + b / 2, x - b / 2, x + b / 2];
+            py = [y - b / 2, y - b / 2, y + b / 2, y + b / 2];
+            
             % Guarda la geometria
-            obj.singGeom{obj.singTotal} = {x, y, area, b / 2, b / 2};
+            obj.singGeom{obj.singTotal} = {x, y, area, b / 2, b / 2, px, py, b};
             
         end % addFiniteArea function
         
@@ -318,12 +322,15 @@ classdef SectionDesigner < BaseModel
             %   unitlength      Unidad de largo
             %   unitload        Unidad de carga
             %   Az              Angulo azimutal
+            %   limMargin       Incrementa el margen
             %   EI              Elevacion del grafico
+            %   plot            Tipo de grafico (cont,sing)
             
             % Verificacion inicial
             if length(e0) ~= length(phix) || length(e0) ~= length(phiy)
                 error('e0 y phix/y deben tener igual largo');
             end
+            obj.updateProps();
             
             p = inputParser;
             p.KeepUnmatched = true;
@@ -332,10 +339,20 @@ classdef SectionDesigner < BaseModel
             p.addOptional('showgrid', true);
             p.addOptional('unitlength', 'mm');
             p.addOptional('unitload', 'MPa');
+            p.addOptional('limMargin', 0.1);
+            p.addOptional('plot', 'cont');
             p.addOptional('Az', 0)
             p.addOptional('EI', 90);
             parse(p, varargin{:});
             r = p.Results;
+            
+            if ~(strcmp(r.plot, 'cont') || strcmp(r.plot, 'sing'))
+                error('Errot tipo de grafico, valores posibles: %s', ...
+                    'cont, sing');
+            end
+            
+            fprintf('Generando grafico esfuerzos:\n');
+            fprintf('\tTipo: %s\n', r.plot);
             
             r.i = ceil(r.i);
             if length(e0) >= r.i && r.i > 0
@@ -343,6 +360,23 @@ classdef SectionDesigner < BaseModel
                 phix = phix(r.i);
                 phiy = phiy(r.i);
             end
+            fprintf('\tDeformaciones:\n');
+            fprintf('\t\te0: %e\n', e0);
+            fprintf('\t\tphix: %e\n', phix);
+            fprintf('\t\tphiy: %e\n', phiy);
+            
+            % Calcula cargas
+            p = obj.calcP(e0, phix, phiy);
+            mx = obj.calcMx(e0, phix, phiy);
+            my = obj.calcMy(e0, phix, phiy);
+            fprintf('\tCargas:\n');
+            fprintf('\t\tP axial: %.2f\n', p);
+            fprintf('\t\tMx: %.2f\n', mx);
+            fprintf('\t\tMy: %.2f\n', my);
+            
+            % Genera el titulo
+            plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
+                sprintf('e_0: %e  /  \\phi_x: %e  /  \\phi_y: %e', e0, phix, phiy)};
             
             if length(e0) ~= 1
                 error('Solo se puede graficar un punto de e0,phix/y, no un vector');
@@ -357,9 +391,9 @@ classdef SectionDesigner < BaseModel
                 grid on;
                 grid minor;
             end
+            axis equal;
             
             % Crea funcion deformacion
-            obj.updateProps();
             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
             fmeshes = {};
             
@@ -368,43 +402,98 @@ classdef SectionDesigner < BaseModel
             dym = Inf;
             
             % Genera el mallado de cada area continua
-            for i = 1:obj.contTotal
-                g = obj.contGeom{i};
-                px = g{11};
-                py = g{12};
-                nt = g{13};
-                dx = g{14};
-                dy = g{15};
-                mat = obj.contMat{i};
+            if strcmp(r.plot, 'cont')
+                for i = 1:obj.contTotal
+                    g = obj.contGeom{i};
+                    px = g{11};
+                    py = g{12};
+                    nt = g{13};
+                    dx = g{14};
+                    dy = g{15};
+                    mat = obj.contMat{i};
+                    
+                    dxm = min(dxm, dx);
+                    dym = min(dym, dy);
+                    
+                    mallaX = zeros(nt, 1);
+                    mallaY = zeros(nt, 1);
+                    vecF = zeros(nt, 1);
+                    
+                    for j = 1:nt
+                        mallaX(j) = px(j);
+                        mallaY(j) = py(j);
+                        [f, ~] = mat.eval(eps(px(j), py(j)));
+                        vecF(j) = f;
+                    end
+                    
+                    [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
+                    vq = griddata(mallaX, mallaY, vecF, xq, yq);
+                    mesh(xq, yq, vq);
+                    surf(xq, yq, vq);
+                    
+                    % Grafica la linea en cero
+                    if r.showmesh
+                        [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
+                        vq = griddata(mallaX, mallaY, vecF.*0, xq, yq);
+                        hold on;
+                        fmesh = mesh(xq, yq, vq);
+                        % alpha(fmesh1, 0.7);
+                        set(fmesh, 'FaceAlpha', 0);
+                        fmeshes{i} = fmesh; %#ok<*AGROW>
+                    end
+                end
+            end
+            
+            % Genera el mallado de cada area singular
+            if strcmp(r.plot, 'sing')
                 
-                dxm = min(dxm, dx);
-                dym = min(dym, dy);
-                
-                mallaX = zeros(nt, 1);
-                mallaY = zeros(nt, 1);
-                vecF = zeros(nt, 1);
-                
-                for j = 1:nt
-                    mallaX(j) = px(j);
-                    mallaY(j) = py(j);
-                    [f, ~] = mat.eval(eps(px(j), py(j)));
-                    vecF(j) = f;
+                % Grafica el borde de los continuos
+                for i = 1:obj.contTotal
+                    if strcmp(obj.contParams{i}.MCURVgeometry, 'rectangle')
+                        rectangle('Position', obj.contGeomPlot{i}, ...
+                            'FaceColor', [obj.contParams{i}.color, 0], ...
+                            'EdgeColor', [0, 0, 0], ...
+                            'LineWidth', obj.contParams{i}.linewidth);
+                    end
                 end
                 
-                [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
-                vq = griddata(mallaX, mallaY, vecF, xq, yq);
-                mesh(xq, yq, vq);
-                surf(xq, yq, vq);
-                
-                % Grafica la linea en cero
-                if r.showmesh
-                    [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
-                    vq = griddata(mallaX, mallaY, vecF.*0, xq, yq);
-                    hold on;
-                    fmesh = mesh(xq, yq, vq);
-                    % alpha(fmesh1, 0.7);
-                    set(fmesh, 'FaceAlpha', 0);
-                    fmeshes{i} = fmesh; %#ok<*AGROW>
+                % Grafica los singulares
+                for i = 1:obj.singTotal
+                    g = obj.singGeom{i};
+                    x = g{1};
+                    y = g{2};
+                    px = g{6};
+                    py = g{7};
+                    nt = 4;
+                    dd = g{8};
+                    mat = obj.singMat{i};
+                    
+                    mallaX = zeros(nt, 1);
+                    mallaY = zeros(nt, 1);
+                    vecF = zeros(nt, 1);
+                    
+                    for j = 1:nt
+                        mallaX(j) = px(j);
+                        mallaY(j) = py(j);
+                        % A diferencia del continuo, el discreto se evalua
+                        % solo en el centro del area
+                        [f, ~] = mat.eval(eps(x, y));
+                        vecF(j) = f;
+                    end
+                    
+                    [xq, yq] = meshgrid(min(mallaX):dd:max(mallaX), min(mallaY):dd:max(mallaY));
+                    vq = griddata(mallaX, mallaY, vecF, xq, yq);
+                    m = mesh(xq, yq, vq);
+                    surf(xq, yq, vq);
+                    % set(m, 'EdgeColor', [0.5, 0.5, 0.5]);
+                    set(m, 'EdgeAlpha', 0);
+                end
+            end
+            
+            if r.showmesh && strcmp(r.plot, 'cont')
+                for i = 1:1:obj.contTotal
+                    set(fmeshes{i}, 'EdgeColor', [0.5, 0.5, 0.5]);
+                    set(fmeshes{i}, 'EdgeAlpha', .50);
                 end
             end
             
@@ -412,21 +501,23 @@ classdef SectionDesigner < BaseModel
             colormap(flipud(jet));
             
             % Agrega el colorbar
-            colorbar('Location', 'eastoutside');
+            h = colorbar('Location', 'eastoutside');
             shading interp;
-            
-            if r.showmesh
-                for i = 1:1:obj.contTotal
-                    set(fmeshes{i}, 'EdgeColor', [0.5, 0.5, 0.5]);
-                    set(fmeshes{i}, 'EdgeAlpha', .50);
-                end
-            end
             
             % Cambia los label
             xlabel(sprintf('x (%s)', r.unitlength));
             ylabel(sprintf('y (%s)', r.unitlength));
-            zlabel(sprintf('\\sigma (%s)', r.unitload));
+            ylabel(h, sprintf('\\sigma (%s)', r.unitload));
             view(r.Az, r.EI);
+            title(plotTitle);
+            
+            % Modifica los ejes para dejar la misma escala
+            xlim(get(gca, 'xlim').*(1 + r.limMargin));
+            ylim(get(gca, 'ylim').*(1 + r.limMargin));
+            
+            % Actualiza el grafico
+            drawnow();
+            dispMCURV();
             
         end % plotStress function
         

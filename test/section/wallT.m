@@ -11,7 +11,7 @@ acero = ManderSteel('Acero', 420, 200000, 600, 200000/20, 0.01, 0.1, 0.3);
 acero.setColor([0.8, 0, 0]);
 
 % Agrega los elementos
-caso = '1';
+caso = '4.2';
 h = 5000;
 b = 4000;
 bw = 300;
@@ -53,7 +53,7 @@ elseif strcmp(caso, '3')
     p = ones(incrementos, 1) .* 9000;
     phix = linspace(0, 0, incrementos)';
     phiy = linspace(0, 4e-5, incrementos)';
-elseif strcmp(caso, '4.1') || strcmp(caso, '4.2')
+elseif strcmp(caso, '4.1')
     As = 8000;
     Asp = 8000;
     wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, hormigonB);
@@ -63,13 +63,20 @@ elseif strcmp(caso, '4.1') || strcmp(caso, '4.2')
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
     wallt.addFiniteArea(h/2-d, 0, Asp, acero);
     p = ones(incrementos, 1) .* 9000;
-    if strcmp(caso, '4.1')
-        phix = linspace(0, 0, incrementos)';
-        phiy = linspace(0, 4e-5, incrementos)';
-    else
-        phix = linspace(0, 1e-4, incrementos)';
-        phiy = linspace(0, 0, incrementos)';
-    end
+    phix = linspace(0, 0, incrementos)';
+    phiy = linspace(0, 4e-5, incrementos)';
+elseif strcmp(caso, '4.2')
+    As = 8000;
+    Asp = 8000;
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 1, 80, hormigonB);
+    wallt.addDiscreteRect((bw - bw2)/2, 0, h-bw-bw2, bw, 1, 10, hormigonB);
+    wallt.addDiscreteRect((h - bw2)/2, 0, bw2, bw2, 1, 10, hormigonB);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, acero);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
+    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    p = ones(incrementos, 1) .* 9000;
+    phix = linspace(0, 1e-4, incrementos)';
+    phiy = linspace(0, 0, incrementos)';
 else
     error('Caso invalido');
 end
