@@ -75,7 +75,7 @@ elseif strcmp(caso, '4.2')
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
     wallt.addFiniteArea(h/2-d, 0, Asp, acero);
     p = ones(incrementos, 1) .* 9000;
-    phix = linspace(0, 1e-4, incrementos)';
+    phix = linspace(0, 4.5e-5, incrementos)';
     phiy = linspace(0, 0, incrementos)';
 else
     error('Caso invalido');

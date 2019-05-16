@@ -171,6 +171,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales
             %   color           Color del area
+            %   plotareafactor  Factor del area en los graficos
             %   transparency    Transparencia de la seccion
             
             if nargin < 5
@@ -184,13 +185,14 @@ classdef SectionDesigner < BaseModel
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('color', material.getColor());
+            p.addOptional('plotareafactor', 1);
             p.addOptional('transparency', 0);
             parse(p, varargin{:});
             r = p.Results;
             r.transparency = 1 - r.transparency;
             
             obj.singTotal = obj.singTotal + 1;
-            b = sqrt(area);
+            b = sqrt(area * r.plotareafactor);
             obj.singGeomPlot{obj.singTotal} = [x - b / 2, y - b / 2, b, b];
             obj.singMat{obj.singTotal} = material;
             obj.singParams{obj.singTotal} = r;
@@ -316,15 +318,17 @@ classdef SectionDesigner < BaseModel
             % especifico (e0,phix,phiy)
             %
             % Parametros iniciales:
+            %   axisequal       Aplica mismo factores a los ejes
+            %   Az              Angulo azimutal
+            %   EI              Elevacion del grafico
             %   i               Numero de punto de evaluacion
-            %   showmesh        Muesra el meshado de la geometria
+            %   limMargin       Incrementa el margen
+            %   normaspect      Normaliza el aspecto
+            %   plot            Tipo de grafico (cont,sing)
             %   showgrid        Muestra la grilla de puntos
+            %   showmesh        Muesra el meshado de la geometria
             %   unitlength      Unidad de largo
             %   unitload        Unidad de carga
-            %   Az              Angulo azimutal
-            %   limMargin       Incrementa el margen
-            %   EI              Elevacion del grafico
-            %   plot            Tipo de grafico (cont,sing)
             
             % Verificacion inicial
             if length(e0) ~= length(phix) || length(e0) ~= length(phiy)
@@ -334,15 +338,17 @@ classdef SectionDesigner < BaseModel
             
             p = inputParser;
             p.KeepUnmatched = true;
-            p.addOptional('i', 1);
-            p.addOptional('showmesh', false);
-            p.addOptional('showgrid', true);
-            p.addOptional('unitlength', 'mm');
-            p.addOptional('unitload', 'MPa');
-            p.addOptional('limMargin', 0.1);
-            p.addOptional('plot', 'cont');
+            p.addOptional('axisequal', false);
             p.addOptional('Az', 0)
             p.addOptional('EI', 90);
+            p.addOptional('i', 1);
+            p.addOptional('limMargin', 0.1);
+            p.addOptional('normaspect', false);
+            p.addOptional('plot', 'cont');
+            p.addOptional('showgrid', true);
+            p.addOptional('showmesh', false);
+            p.addOptional('unitlength', 'mm');
+            p.addOptional('unitload', 'MPa');
             parse(p, varargin{:});
             r = p.Results;
             
@@ -391,7 +397,9 @@ classdef SectionDesigner < BaseModel
                 grid on;
                 grid minor;
             end
-            axis equal;
+            if r.axisequal
+                axis equal;
+            end
             
             % Crea funcion deformacion
             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
@@ -514,6 +522,13 @@ classdef SectionDesigner < BaseModel
             % Modifica los ejes para dejar la misma escala
             xlim(get(gca, 'xlim').*(1 + r.limMargin));
             ylim(get(gca, 'ylim').*(1 + r.limMargin));
+            
+            % Aplica factor de escala en x/y
+            if r.normaspect && ~r.axisequal
+                h = get(gca, 'DataAspectRatio');
+                [sx, sy] = obj.getSize();
+                set(gca, 'DataAspectRatio', [h(1), h(2) * sx / sy, h(3)]);
+            end
             
             % Actualiza el grafico
             drawnow();
@@ -795,6 +810,15 @@ classdef SectionDesigner < BaseModel
             
         end % calcGeometricCenter function
         
+        function [sx, sy] = getSize(obj)
+            % getSize: Calcula el porte de la seccion
+            
+            [xmin, xmax, ymin, ymax] = obj.getLimits();
+            sx = abs(xmax-xmin);
+            sy = abs(ymax-ymin);
+            
+        end
+        
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
             
@@ -804,12 +828,13 @@ classdef SectionDesigner < BaseModel
             [cx, cy] = obj.getCentroid();
             [gx, gy] = obj.getCenter();
             [xmin, xmax, ymin, ymax] = obj.getLimits();
+            [sx, sy] = obj.getSize();
             
             fprintf('\tCentroide: %.2f, %.2f\n', cx, cy);
             fprintf('\tCentro geometrico: %.2f, %.2f\n', gx, gy);
             fprintf('\tArea: %.2f\n', obj.getArea());
-            fprintf('\tAncho: %.2f\n', abs(xmax-xmin));
-            fprintf('\tAlto: %.2f\n', abs(ymax-ymin));
+            fprintf('\tAncho: %.2f\n', sx);
+            fprintf('\tAlto: %.2f\n', sy);
             fprintf('\tNumero de elementos: %d\n\t\tContinuos: %d\n\t\tFinitos: %d\n', ...
                 obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
             fprintf('\tLimites de la seccion:\n\t\tx: (%.2f, %.2f)\n\t\ty: (%.2f, %.2f)\n', ...
