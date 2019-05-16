@@ -72,10 +72,21 @@ classdef SectionDesigner < BaseModel
             % addDiscreteRect: Agrega un rectangulo discreto a la seccion,
             % con centro (xc,yc) altura h, ancho b y una materialidad
             %
-            % Parametros opcionales
+            % Parametros requeridos:
+            %   xc              Centro de gravedad
+            %   yc              Centro de gravedad
+            %   b               Ancho
+            %   h               Alto
+            %   nx              Numero de discretizaciones en eje x
+            %   ny              Numero de discretizaciones en eje y
+            %   material        Material de la seccion
+            %   rotation        Angulo de giro de la seccion
+            %
+            % Parametros opcionales:
             %   color           Color del area
             %   linewidth       Ancho de linea de la seccion
             %   transparency    Transparencia de la seccion
+            %   rotation        Angulo de rotacion en grados
             
             if nargin < 8
                 error('Numero de parametros incorrectos, uso: %s', ...
@@ -90,12 +101,23 @@ classdef SectionDesigner < BaseModel
             p.addOptional('color', material.getColor());
             p.addOptional('linewidth', 0.5);
             p.addOptional('transparency', 0.6);
+            p.addOptional('rotation', 0);
             addParameter(p, 'MCURVgeometry', 'rectangle');
             parse(p, varargin{:});
             r = p.Results;
             
+            if isempty(r.color)
+                r.color = material.getColor();
+            end
+            
+            % Matriz de transformacion angular
+            alpha = r.rotation * pi() / 180;
+            tang = [cos(alpha), -sin(alpha); sin(alpha), cos(alpha)];
+            rotBox = abs([b, h] * tang); % Caja rotada
+            
             obj.contTotal = obj.contTotal + 1;
-            obj.contGeomPlot{obj.contTotal} = [xc - b / 2, yc - h / 2, b, h];
+            obj.contGeomPlot{obj.contTotal} = [prot(1) - rotBox(1)/2, ...
+                prot(2) - rotBox(2)/2, rotBox(1), rotBox(2)];
             obj.contMat{obj.contTotal} = material;
             obj.contParams{obj.contTotal} = r;
             
@@ -103,17 +125,21 @@ classdef SectionDesigner < BaseModel
             dx = b / nx;
             dy = h / ny;
             
+            % Anchos rotados
+            dRot = abs([dx, dy] * tang);
+            
             tn = nx * ny; % Puntos totales
             px = zeros(tn, 1); % Puntos en x
             py = zeros(tn, 1); % Puntos en y
             
-            y = yc - h / 2 + dy / 2;
+            y = - h / 2 + dy / 2;
             k = 1; % Guarda el numero del punto
             for i = 1:ny
-                x = xc - b / 2 + dx / 2;
+                x = - b / 2 + dx / 2;
                 for j = 1:nx
-                    px(k) = x;
-                    py(k) = y;
+                    rot = [xc+x, yc+y] * tang;
+                    px(k) = rot(1);
+                    py(k) = rot(2);
                     x = x + dx;
                     k = k + 1;
                 end
@@ -127,8 +153,10 @@ classdef SectionDesigner < BaseModel
             tnd = nxd * nyd; % Puntos totales
             pxd = zeros(tnd, 1); % Puntos en x
             pyd = zeros(tnd, 1); % Puntos en y
+            
             dxd = b / (nxd - 1);
             dyd = h / (nyd - 1);
+            dRotd = [dxd, dyd] * tang;
             
             y = yc - h / 2;
             k = 1; % Guarda el numero del punto
@@ -144,8 +172,16 @@ classdef SectionDesigner < BaseModel
             end
             
             % Guarda la geometria
-            obj.contGeom{obj.contTotal} = {px, py, dx, dy, tn, xc, yc, ...
-                b * h, b, h, pxd, pyd, tnd, dxd, dyd};
+            obj.contGeom{obj.contTotal} = {px, py, ... % Lista de puntos rotados
+                dRot(1), dRot(2), ... % dx,dy rotados
+                tn, ... % Numero de puntos
+                prot(1), prot(2), ... % Centro del objeto, rotado
+                b * h, ... % Area del objeto
+                rotBox(1), rotBox(2), ... % Box del objeto, rotado
+                pxd, pyd, ... % Puntos del mallado denso, rotados
+                tnd, ... % Numero de puntos del mallado denso
+                dRotd(1), dRotd(2), ... % dx,dy denso rotado
+                };
             
         end % addDiscreteRect function
         
@@ -153,7 +189,14 @@ classdef SectionDesigner < BaseModel
             % addDiscreteSquare: Agrega un cuadrado discreto a la seccion,
             % con centro (xc,yc) largo l y una materialidad
             %
-            % Parametros opcionales
+            % Parametros requeridos:
+            %   xc              Centro de gravedad
+            %   yc              Centro de gravedad
+            %   L               Largo del cuadrado
+            %   n               Numero de discretizaciones en eje x/y
+            %   material        Materialidad de la seccion
+            %
+            % Parametros opcionales:
             %   color           Color del area
             %   linewidth       Ancho de linea de la seccion
             %   transparency    Transparencia de la seccion
@@ -162,21 +205,90 @@ classdef SectionDesigner < BaseModel
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'addDiscreteSquare(xc,yc,L,n,material,varargin)');
             end
-            obj.addDiscreteRect(xc, yc, L, L, n, n, material, varargin);
+            obj.addDiscreteRect(xc, yc, L, L, n, n, material, varargin{:});
             
         end % addDiscreteSquare function
         
-        function addFiniteArea(obj, x, y, area, material, varargin)
+        function addDiscreteISection(obj, xc, yc, h, bfi, bfs, ti, ts, tw, nx, ny, material, varargin)
+            % addDiscreteISection: Agrega una seccion I discreta
+            %
+            % Parametros requeridos:
+            %   xc              Centro de gravedad
+            %   yc              Centro de gravedad
+            %   h               Altura de la seccion
+            %   bf              Ancho del ala inferior
+            %   bs              Ancho del ala superior
+            %   ti              Espesor del ala inferior
+            %   ts              Espesor del ala superior
+            %   tw              Espesor del alma
+            %   nx              Discretizacion en el eje x
+            %   ny              Discretizacion en el eje y
+            %   material        Materialidad de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   linewidth       Ancho de linea de la seccion
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 12
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteISection(xc,yc,h,bfi,bfs,ti,ts,tw,nx,ny,material,varargin)');
+            end
+            
+            % Calcula las particiones
+            nyts = ceil(ny/h*ts);
+            nyti = ceil(ny/h*ti);
+            nyw = ny - nyts - nyti; % Alma
+            bf = max(bfi, bfs);
+            nxts = ceil(nx/bf*bfs);
+            nxti = ceil(nx/bf*bfi);
+            nxw = ceil(nx/bf*tw);
+            
+            % Agrega las alas
+            obj.addDiscreteRect(xc, yc+h/2-ts/2, bfs, ts, nxts, nyts, material, varargin{:});
+            obj.addDiscreteRect(xc, yc-h/2+ti/2, bfi, ti, nxti, nyti, material, varargin{:});
+            obj.addDiscreteRect(xc, yc, tw, h-ti-ts, nxw, nyw, material, varargin{:});
+            
+        end % addDiscreteISection function
+        
+        function addDiscreteHSection(obj, xc, yc, h, b, tf, tw, nx, ny, material, varargin)
+            % addDiscreteHSection: Agrega una seccion H discreta
+            %
+            % Parametros requeridos:
+            %   xc              Centro de gravedad
+            %   yc              Centro de gravedad
+            %   h               Altura de la seccion
+            %   b               Ancho del ala
+            %   tf              Espesor del ala
+            %   tw              Espesor del alma
+            %   nx              Discretizacion en el eje x
+            %   ny              Discretizacion en el eje y
+            %   material        Materialidad de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   linewidth       Ancho de linea de la seccion
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 10
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteHSection(xc,yc,h,b,tf,tw,nx,ny,material,varargin)');
+            end
+            obj.addDiscreteISection(xc, yc, h, b, b, tf, tf, tw, nx, ny, material, varargin{:});
+            
+        end % addDiscreteHSection function
+        
+        function addFiniteArea(obj, xc, yc, area, material, varargin)
             % addFiniteArea: Agrega un area finita
             %
-            % Parametros opcionales
+            % Parametros opcionales:
             %   color           Color del area
             %   plotareafactor  Factor del area en los graficos
             %   transparency    Transparencia de la seccion
             
             if nargin < 5
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'addFiniteArea(x,y,area,material,varargin)');
+                    'addFiniteArea(xc,yc,area,material,varargin)');
             end
             if ~isa(material, 'GenericMaterial')
                 error('Material no es un objeto de clase GenericMaterial');
@@ -193,16 +305,16 @@ classdef SectionDesigner < BaseModel
             
             obj.singTotal = obj.singTotal + 1;
             b = sqrt(area * r.plotareafactor);
-            obj.singGeomPlot{obj.singTotal} = [x - b / 2, y - b / 2, b, b];
+            obj.singGeomPlot{obj.singTotal} = [xc - b / 2, yc - b / 2, b, b];
             obj.singMat{obj.singTotal} = material;
             obj.singParams{obj.singTotal} = r;
             
             % Genera el mallado de la geometria
-            px = [x - b / 2, x + b / 2, x - b / 2, x + b / 2];
-            py = [y - b / 2, y - b / 2, y + b / 2, y + b / 2];
+            px = [xc - b / 2, xc + b / 2, xc - b / 2, xc + b / 2];
+            py = [yc - b / 2, yc - b / 2, yc + b / 2, yc + b / 2];
             
             % Guarda la geometria
-            obj.singGeom{obj.singTotal} = {x, y, area, b / 2, b / 2, px, py, b};
+            obj.singGeom{obj.singTotal} = {xc, yc, area, b / 2, b / 2, px, py, b};
             
         end % addFiniteArea function
         
