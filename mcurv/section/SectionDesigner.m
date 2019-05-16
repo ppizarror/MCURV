@@ -35,7 +35,8 @@ classdef SectionDesigner < BaseModel
         singMat % Materialidad objetos singulares
         singTotal % Total de objetos singulares
         singParams % Parametros adicionales objetos singulares
-        
+        x0 % Guarda la posicion en x del centroide
+        y0 % Guarda la posicion en y del centroide
     end % protected properties
     
     methods(Access = public)
@@ -60,6 +61,10 @@ classdef SectionDesigner < BaseModel
             obj.singGeomPlot = {};
             obj.singMat = {};
             obj.singTotal = 0;
+            
+            % Otros
+            obj.x0 = 0;
+            obj.y0 = 0;
             
         end % SectionDesigner constructor
         
@@ -114,7 +119,7 @@ classdef SectionDesigner < BaseModel
             end
             
             % Guarda la geometria
-            obj.contGeom{obj.contTotal} = {px, py, dx, dy, tn, xc, yc, b*h};
+            obj.contGeom{obj.contTotal} = {px, py, dx, dy, tn, xc, yc, b * h};
             
         end % addDiscreteRect function
         
@@ -137,7 +142,7 @@ classdef SectionDesigner < BaseModel
             p.addOptional('transparency', 0);
             parse(p, varargin{:});
             r = p.Results;
-            r.transparency = 1-r.transparency;
+            r.transparency = 1 - r.transparency;
             
             obj.singTotal = obj.singTotal + 1;
             b = sqrt(area);
@@ -212,7 +217,7 @@ classdef SectionDesigner < BaseModel
             end
             
             % Modifica los ejes para dejar la misma escala
-            lims =  get(gca, 'ylim') .* (1 + r.limMargin);
+            lims = get(gca, 'ylim') .* (1 + r.limMargin);
             xlim(lims);
             ylim(lims);
             
@@ -231,15 +236,15 @@ classdef SectionDesigner < BaseModel
             at = 0; % Area total
             for i = 1:obj.contTotal
                 g = obj.contGeom{i};
-                xid = xid + g{6}*g{8};
-                yid = yid + g{7}*g{8};
+                xid = xid + g{6} * g{8};
+                yid = yid + g{7} * g{8};
                 at = at + g{8};
             end
             
             for i = 1:obj.singTotal
                 g = obj.singGeom{i};
-                xid = xid + g{1}*g{3};
-                yid = yid + g{2}*g{3};
+                xid = xid + g{1} * g{3};
+                yid = yid + g{2} * g{3};
                 at = at + g{3};
             end
             
@@ -256,7 +261,7 @@ classdef SectionDesigner < BaseModel
             for i = 1:obj.contTotal
                 g = obj.contGeom{i};
                 area = area + g{8};
-            end 
+            end
             for i = 1:obj.singTotal
                 g = obj.singGeom{i};
                 area = area + g{3};
@@ -264,14 +269,252 @@ classdef SectionDesigner < BaseModel
             
         end % getArea function
         
+        function updateProps(obj)
+            % updateProps: Actualiza las propiedades del modelo previo
+            % analisis
+            
+            [x, y] = obj.getCentroid();
+            obj.x0 = x;
+            obj.y0 = y;
+            
+        end % updateProps function
+        
+        function jac = calcJac(obj, e0, phix, phiy)
+            % calcJac: Calcula el jacobiano de la seccion
+            
+            % Crea funcion deformacion
+            eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+            
+            % Valores del jacobiano
+            aP_ae0 = 0;
+            aP_aphix = 0;
+            aP_aphiy = 0;
+            aMx_aphix = 0;
+            aMx_aphiy = 0;
+            aMy_aphiy = 0;
+            
+            % Calcula las integrales
+            for j = 1:obj.contTotal
+                
+                g = obj.contGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.contMat{j};
+                dd = g{3} * g{4};
+                nt = g{5};
+                
+                for i = 1:nt % Avanza en los puntos continuos
+                    
+                    % Calcula la deformacion
+                    e_i = eps(px(i), py(i));
+                    
+                    % Calcula la rigidez tangente
+                    [~, Ec] = mat.eval(e_i);
+                    
+                    % Calcula los jacobianos
+                    aP_ae0 = aP_ae0 + Ec * dd^2; % aP/ae0
+                    aP_aphix = aP_aphix + Ec * (py(i) - obj.y0) * dd^2; % aP/aphix
+                    aP_aphiy = aP_aphiy - Ec * (px(i) - obj.x0) * dd^2; % aP/aphiy
+                    aMx_aphix = aMx_aphix + Ec * ((py(i) - obj.y0)^2) * dd^2; % aMx/aphix
+                    aMx_aphiy = aMx_aphiy - Ec * (py(i) - obj.y0) * (px(i) - obj.x0) * dd^2; % aMx/aphiy
+                    aMy_aphiy = aMy_aphiy + Ec * ((px(i) - obj.x0)^2) * dd^2; % aMy/aphiy
+                    
+                end
+            end
+            
+            % Agrega objetos puntuales
+            for j = 1:obj.singTotal
+                
+                g = obj.singGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.singMat{j};
+                area = g{3};
+                
+                % Calcula la deformacion
+                e_i = eps(px, py);
+                
+                % Calcula la rigidez tangente del suelo
+                [~, Ec] = mat.eval(e_i);
+                
+                % Calcula los jacobianos
+                aP_ae0 = aP_ae0 + Ec * area; % aP/ae0
+                aP_aphix = aP_aphix + Ec * (py - obj.y0) * area; % aP/aphix
+                aP_aphiy = aP_aphiy - Ec * (px - obj.x0) * area; % aP/aphiy
+                aMx_aphix = aMx_aphix + Ec * ((py - obj.y0)^2) * area; % aMx/aphix
+                aMx_aphiy = aMx_aphiy - Ec * (py - obj.y0) * (px - obj.x0) * area; % aMx/aphiy
+                aMy_aphiy = aMy_aphiy + Ec * ((px - obj.x0)^2) * area; % aMy/aphiy
+            end
+            
+            % Asigna los valores iguales
+            aMx_ae0 = aP_aphix;
+            aMy_ae0 = aP_aphiy;
+            aMy_aphix = aMx_aphiy;
+            
+            % Genera el jacobiano
+            jac = [[aP_ae0, aP_aphix, aP_aphiy]; ...
+                [aMx_ae0, aMx_aphix, aMx_aphiy]; ...
+                [aMy_ae0, aMy_aphix, aMy_aphiy]];
+            
+        end % calcJac function
+        
+        function mx = calcMx(obj, e0, phix, phiy)
+            % calcMx: Calcula el momento con respecto al eje x
+            
+            % Crea funcion deformacion
+            eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+            
+            % Calcula la integral para objetos continuos
+            mx = 0;
+            for j = 1:obj.contTotal
+                g = obj.contGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.contMat{j};
+                dd = g{3} * g{4};
+                nt = g{5};
+                
+                for i = 1:nt % Avanza en los puntos continuos
+                    % Calcula la deformacion
+                    e_i = eps(px(i), py(i));
+                    
+                    % Calcula la tension
+                    [fc, ~] = mat.eval(e_i);
+                    
+                    % Calcula el momento
+                    mx = mx + fc * (py(i) - obj.y0) * dd^2;
+                end
+            end
+            
+            % Agrega los objetos singulares
+            for j = 1:obj.singTotal
+                g = obj.singGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.singMat{j};
+                area = g{3};
+                
+                % Calcula la deformacion
+                e_i = eps(px, py);
+                
+                % Calcula la tension
+                [fc, ~] = mat.eval(e_i);
+                
+                % Suma el momento
+                mx = mx + fc * (py - obj.y0) * area;
+            end
+            
+        end % calcMx function
+        
+        function my = calcMy(obj, e0, phix, phiy)
+            % calcMy: Calcula el momento con respecto al eje y
+            
+            % Crea funcion deformacion
+            eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+            
+            % Calcula la integral para objetos continuos
+            my = 0;
+            for j = 1:obj.contTotal
+                g = obj.contGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.contMat{j};
+                dd = g{3} * g{4};
+                nt = g{5};
+                
+                for i = 1:nt % Avanza en los puntos continuos
+                    % Calcula la deformacion
+                    e_i = eps(px(i), py(i));
+                    
+                    % Calcula la tension
+                    [fc, ~] = mat.eval(e_i);
+                    
+                    % Calcula el momento
+                    my = my - fc * (px(i) - obj.x0) * dd^2;
+                end
+            end
+            
+            % Agrega los objetos singulares
+            for j = 1:obj.singTotal
+                g = obj.singGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.singMat{j};
+                area = g{3};
+                
+                % Calcula la deformacion
+                e_i = eps(px, py);
+                
+                % Calcula la tension
+                [fc, ~] = mat.eval(e_i);
+                
+                % Suma el momento
+                my = my - fc * (px - obj.x0) * area;
+            end
+            
+        end % calcMy function
+        
+        function p = calcP(obj, e0, phix, phiy)
+            % calcP: Calcula la carga axial
+            
+            % Crea funcion deformacion
+            eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+            
+            % Calcula la integral para objetos continuos
+            p = 0;
+            for j = 1:obj.contTotal
+                g = obj.contGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.contMat{j};
+                dd = g{3} * g{4};
+                nt = g{5};
+                
+                for i = 1:nt % Avanza en los puntos continuos
+                    % Calcula la deformacion
+                    e_i = eps(px(i), py(i));
+                    
+                    % Calcula la tension
+                    [fc, ~] = mat.eval(e_i);
+                    
+                    % Calcula el momento
+                    p = p + fc * dd^2;
+                end
+            end
+            
+            % Agrega los objetos singulares
+            for j = 1:obj.singTotal
+                g = obj.singGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.singMat{j};
+                area = g{3};
+                
+                % Calcula la deformacion
+                e_i = eps(px, py);
+                
+                % Calcula la tension
+                [fc, ~] = mat.eval(e_i);
+                
+                % Suma el momento
+                p = p + fc * area;
+            end
+            
+        end % calcP function
+        
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
             
             fprintf('Section designer:\n');
             disp@BaseModel(obj);
+            [cx, cy] = obj.getCentroid();
+            fprintf('\tCentroide: %.2f, %.2f\n', cx, cy);
+            fprintf('\tArea: %.2f\n', obj.getArea());
+            fprintf('\tNumero de elementos: %d\n\t\tContinuos: %d\n\t\tFinitos: %d\n', ...
+                obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
             
         end % disp function
         
     end % public methods
     
-end % GenericMaterial class
+end % SectionDesigner class
