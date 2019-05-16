@@ -24,4 +24,4 @@ p = linspace(0, 0, 500)';
 phix = linspace(0, 1.2e-4, 500)';
 phiy = linspace(0, 0, 500)';
 analysis.calc_e0M(simplebeam, p, phix, phiy);
-analysis.plot_e0M('plot', 'mphix');
+analysis.plot_e0M('plot', 'mphix', 'factor', 0.00010197162129779283 / 1000);

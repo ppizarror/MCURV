@@ -119,7 +119,7 @@ classdef SectionDesigner < BaseModel
             end
             
             % Guarda la geometria
-            obj.contGeom{obj.contTotal} = {px, py, dx, dy, tn, xc, yc, b * h};
+            obj.contGeom{obj.contTotal} = {px, py, dx, dy, tn, xc, yc, b * h, b, h};
             
         end % addDiscreteRect function
         
@@ -217,9 +217,8 @@ classdef SectionDesigner < BaseModel
             end
             
             % Modifica los ejes para dejar la misma escala
-            lims = get(gca, 'ylim') .* (1 + r.limMargin);
-            xlim(lims);
-            ylim(lims);
+            xlim(get(gca, 'xlim').*(1 + r.limMargin));
+            ylim(get(gca, 'ylim').*(1 + r.limMargin));
             
             % Cambia los label
             xlabel(sprintf('x (%s)', r.units));
@@ -303,7 +302,7 @@ classdef SectionDesigner < BaseModel
                 dd = g{3} * g{4};
                 nt = g{5};
                 for i = 1:nt % Avanza en los puntos continuos
-
+                    
                     % Calcula la deformacion
                     e_i = eps(px(i), py(i));
                     
@@ -501,16 +500,57 @@ classdef SectionDesigner < BaseModel
             
         end % calcP function
         
+        function [xmin, xmax, ymin, ymax] = calcLimits(obj)
+            % calcLimits: Calcula los limites de la seccion
+            
+            xmin = Inf;
+            xmax = -Inf;
+            ymin = Inf;
+            ymax = -Inf;
+            
+            % Recorre los objetos continuos
+            for j = 1:obj.contTotal
+                g = obj.contGeom{j};
+                xc = g{6};
+                yc = g{7};
+                b = g{9};
+                h = g{10};
+                xmin = min(xmin, xc-b/2);
+                xmax = max(xmax, xc+b/2);
+                ymin = min(ymin, yc-h/2);
+                ymax = max(ymax, yc+h/2);
+            end
+            
+            % Agrega objetos puntuales
+            for j = 1:obj.singTotal
+                g = obj.singGeom{j};
+                pjx = g{1};
+                pjy = g{2};
+                xmin = min(xmin, pjx);
+                xmax = max(xmax, pjx);
+                ymin = min(ymin, pjy);
+                ymax = max(ymax, pjy);
+            end
+            
+        end % calcLimits function
+        
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
             
             fprintf('Section designer:\n');
             disp@BaseModel(obj);
+            
             [cx, cy] = obj.getCentroid();
+            [xmin, xmax, ymin, ymax] = obj.calcLimits();
+            
             fprintf('\tCentroide: %.2f, %.2f\n', cx, cy);
             fprintf('\tArea: %.2f\n', obj.getArea());
+            fprintf('\tAncho: %.2f\n', abs(xmax-xmin));
+            fprintf('\tAlto: %.2f\n', abs(ymax-ymin));
             fprintf('\tNumero de elementos: %d\n\t\tContinuos: %d\n\t\tFinitos: %d\n', ...
                 obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
+            fprintf('\tLimites de la seccion:\n\t\tx: (%.2f, %.2f)\n\t\ty: (%.2f, %.2f)\n', ...
+                xmin, xmax, ymin, ymax);
             
         end % disp function
         

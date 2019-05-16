@@ -48,6 +48,10 @@ classdef SectionAnalysis < BaseModel
             % curvaturas
             
             fprintf('Calculando e0 y M dado arreglo de P y phix,phiy\n');
+            
+            % Actualiza propiedades
+            section.updateProps();
+            
             % Genera el vector de cambio de P
             n = length(p);
             delta_p = zeros(n, 1);
@@ -89,6 +93,7 @@ classdef SectionAnalysis < BaseModel
                     % Calcula el primer delta_eo, considera deformacion total como la suma
                     % de los delta_e0 de cada iteracion
                     jac = section.calcJac(defTotal(i), phix(i), phiy(i));
+                    jac = jac(1, 1); % Solo escata aP/ae0
                     jac = jac^-1;
                     jacIter(i, 1) = jac(1, 1);
                     deltaE0Iter(i, 1) = jacIter(i, 1) * delta_p(i);
@@ -116,6 +121,7 @@ classdef SectionAnalysis < BaseModel
                         
                         % Si es mayor a la tolerancia
                         jac = section.calcJac(sum(deltaE0Iter(i, :)), phix(i), phiy(i));
+                        jac = jac(1, 1); % Solo escata aP/ae0
                         jac = jac^-1;
                         jacIter(i, j+1) = jac(1, 1);
                         deltaE0Iter(i, j+1) = jacIter(i, j+1) * err(i, j);
@@ -209,12 +215,17 @@ classdef SectionAnalysis < BaseModel
             % plot_e0M: Grafica el ultimo analisis de e0M
             %
             % Parametros opcionales:
-            %   scalefactor     Factor de escala para el momento
+            %   factor          Factor de escala para el momento
+            %   plot            Tipo de grafico
+            %   unitlength      Unidad de longitud
+            %   unitload        Unidad de carga
             
             p = inputParser;
             p.KeepUnmatched = true;
-            p.addOptional('scalefactor', 0.00010197162129779283 / 1000); % Si se usan N*mm a tonf-m
+            p.addOptional('factor', 1); % Si se usan N*mm a tonf-m
             p.addOptional('plot', 'all');
+            p.addOptional('unitlength', '1/mm'); % Unidad de largo
+            p.addOptional('unitload', 'kN*m'); % Unidad de carga
             parse(p, varargin{:});
             r = p.Results;
             
@@ -226,16 +237,16 @@ classdef SectionAnalysis < BaseModel
                 plt = figure();
                 movegui(plt, 'center');
                 set(gcf, 'name', 'Momento curvatura');
-
-                plot(obj.lastsole0p{4}, obj.lastsole0p{1}.*r.scalefactor, '-', ...
+                
+                plot(obj.lastsole0p{4}, obj.lastsole0p{1}.*r.factor, '-', ...
                     'LineWidth', 1.5);
                 hold on;
-                plot(obj.lastsole0p{4}, obj.lastsole0p{2}.*r.scalefactor, '-', ...
+                plot(obj.lastsole0p{4}, obj.lastsole0p{2}.*r.factor, '-', ...
                     'LineWidth', 1.5);
                 grid on;
                 grid minor;
-                xlabel('Curvatura \phi_y (1/mm])');
-                ylabel('Momento M (tonf-m)');
+                xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitlength));
+                ylabel(sprintf('Momento M (%s)', r.unitload));
                 title('Momento curvatura M/\phi_y');
                 legend({'M_x', 'M_y'}, 'location', 'best');
             end
@@ -244,16 +255,16 @@ classdef SectionAnalysis < BaseModel
                 plt = figure();
                 movegui(plt, 'center');
                 set(gcf, 'name', 'Momento curvatura');
-
-                plot(obj.lastsole0p{3}, obj.lastsole0p{1}.*r.scalefactor, '-', ...
+                
+                plot(obj.lastsole0p{3}, obj.lastsole0p{1}.*r.factor, '-', ...
                     'LineWidth', 1.5);
                 hold on;
-                plot(obj.lastsole0p{3}, obj.lastsole0p{2}.*r.scalefactor, '-', ...
+                plot(obj.lastsole0p{3}, obj.lastsole0p{2}.*r.factor, '-', ...
                     'LineWidth', 1.5);
                 grid on;
                 grid minor;
-                xlabel('Curvatura \phi_x (1/mm])');
-                ylabel('Momento M (tonf-m)');
+                xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitlength));
+                ylabel(sprintf('Momento M (%s)', r.unitload));
                 title('Momento curvatura M/\phi_x');
                 legend({'M_x', 'M_y'}, 'location', 'best');
             end
@@ -262,12 +273,12 @@ classdef SectionAnalysis < BaseModel
                 plt = figure();
                 movegui(plt, 'center');
                 set(gcf, 'name', 'P vs \phi_x');
-
+                
                 plot(obj.lastsole0p{3}, obj.lastsole0p{5}, '-', ...
                     'LineWidth', 1.5);
                 grid on;
                 grid minor;
-                xlabel('Curvatura \phi_x (1/mm])');
+                xlabel(sprintf('Curvatura \phi_x (%s)', r.unitload));
                 ylabel('Carga axial P');
                 title('Carga axial vs curvatura');
             end
