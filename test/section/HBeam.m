@@ -20,7 +20,6 @@ hbeam.disp();
 
 % Grafica
 hbeam.plot('showdisc', true);
-return;
 
 % Ejecuta un analisis
 analysis = SectionAnalysis('Analisis', 100, 0.01);

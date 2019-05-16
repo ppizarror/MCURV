@@ -1,0 +1,368 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of SectionAnalysis</title>
+  <meta name="keywords" content="SectionAnalysis">
+  <meta name="description" content="______________________________________________________________________">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- # mcurv --><!-- menu.html section -->
+<h1>SectionAnalysis
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>______________________________________________________________________</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> ______________________________________________________________________
+|                                                                      |
+|           MCURV - Toolbox para Calculo de Momento Curvatura          |
+|                                                                      |
+|                    Area de Estructuras y Geotecnia                   |
+|                   Departamento de Ingenieria Civil                   |
+|              Facultad de Ciencias Fisicas y Matematicas              |
+|                         Universidad de Chile                         |
+|                                                                      |
+| MCURV es una plataforma en MATLAB que permite realizar calculos de   |
+| momento curvatura de secciones genericas utilizando la metodologia de|
+| calculo no lineal Newton-Raphson.                                    |
+|______________________________________________________________________|
+|                                                                      |
+| SectionAnalysis                                                      |
+|                                                                      |
+| Analiza una seccion, permitiendo calcular diagrama momento curvatura |
+| de cualquier seccion tipo SectionDesigner.                           |
+|                                                                      |
+| Autor: Pablo Pizarro R. @ppizarror.com                               |
+| Licencia: MIT                                                        |
+| Codigo fuente: https://github.com/ppizarror/MCURV                    |
+|______________________________________________________________________|</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="../../mcurv/base/BaseModel.html" class="code" title="">BaseModel</a>	______________________________________________________________________</li><li><a href="SectionAnalysis.html" class="code" title="">SectionAnalysis</a>	______________________________________________________________________</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="SectionAnalysis.html" class="code" title="">SectionAnalysis</a>	______________________________________________________________________</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function obj = SectionAnalysis(analysisName, maxiter, tol)</a></li><li><a href="#_sub2" class="code">function [mxInt, myInt, pInt, pE0, jacIter, deltaE0Iter,</a></li><li><a href="#_sub3" class="code">function plot_e0M(obj, varargin)</a></li><li><a href="#_sub4" class="code">function disp(obj)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">% ______________________________________________________________________</span>
+0002 <span class="comment">%|                                                                      |</span>
+0003 <span class="comment">%|           MCURV - Toolbox para Calculo de Momento Curvatura          |</span>
+0004 <span class="comment">%|                                                                      |</span>
+0005 <span class="comment">%|                    Area de Estructuras y Geotecnia                   |</span>
+0006 <span class="comment">%|                   Departamento de Ingenieria Civil                   |</span>
+0007 <span class="comment">%|              Facultad de Ciencias Fisicas y Matematicas              |</span>
+0008 <span class="comment">%|                         Universidad de Chile                         |</span>
+0009 <span class="comment">%|                                                                      |</span>
+0010 <span class="comment">%| MCURV es una plataforma en MATLAB que permite realizar calculos de   |</span>
+0011 <span class="comment">%| momento curvatura de secciones genericas utilizando la metodologia de|</span>
+0012 <span class="comment">%| calculo no lineal Newton-Raphson.                                    |</span>
+0013 <span class="comment">%|______________________________________________________________________|</span>
+0014 <span class="comment">%|                                                                      |</span>
+0015 <span class="comment">%| SectionAnalysis                                                      |</span>
+0016 <span class="comment">%|                                                                      |</span>
+0017 <span class="comment">%| Analiza una seccion, permitiendo calcular diagrama momento curvatura |</span>
+0018 <span class="comment">%| de cualquier seccion tipo SectionDesigner.                           |</span>
+0019 <span class="comment">%|                                                                      |</span>
+0020 <span class="comment">%| Autor: Pablo Pizarro R. @ppizarror.com                               |</span>
+0021 <span class="comment">%| Licencia: MIT                                                        |</span>
+0022 <span class="comment">%| Codigo fuente: https://github.com/ppizarror/MCURV                    |</span>
+0023 <span class="comment">%|______________________________________________________________________|</span>
+0024 
+0025 classdef <a href="SectionAnalysis.html" class="code" title="">SectionAnalysis</a> &lt; <a href="../../mcurv/base/BaseModel.html" class="code" title="">BaseModel</a>
+0026     
+0027     properties(Access = protected)
+0028         maxiter <span class="comment">% Numero maximo de iteraciones</span>
+0029         tol <span class="comment">% Tolerancia del calculo</span>
+0030         lastsole0p <span class="comment">% Ultima solucion de e0/P</span>
+0031     <span class="keyword">end</span> <span class="comment">% protected properties</span>
+0032     
+0033     methods(Access = public)
+0034         
+0035         <a name="_sub0" href="#_subfunctions" class="code">function obj = SectionAnalysis(analysisName, maxiter, tol)</a>
+0036             <span class="comment">% SectionAnalysis: Constructor de la clase</span>
+0037             
+0038             obj = obj@<a href="../../mcurv/base/BaseModel.html" class="code" title="">BaseModel</a>(analysisName);
+0039             obj.maxiter = maxiter;
+0040             obj.tol = tol;
+0041             obj.lastsole0p = {};
+0042             
+0043         <span class="keyword">end</span> <span class="comment">% SectionAnalysis constructor</span>
+0044         
+0045         <a name="_sub1" href="#_subfunctions" class="code">function [mxInt, myInt, pInt, pE0, jacIter, deltaE0Iter, </a><span class="keyword">...</span>
+0046                 err, defTotal, problmIter, iters] = calc_e0M(obj, section, p, phix, phiy)
+0047             <span class="comment">% calc_e0M: Calcula e0 y M dado un arreglo de cargas y</span>
+0048             <span class="comment">% curvaturas</span>
+0049             
+0050             fprintf(<span class="string">'Calculando e0 y M dado arreglo de P y phix,phiy\n'</span>);
+0051             
+0052             <span class="comment">% Actualiza propiedades</span>
+0053             section.updateProps();
+0054             
+0055             <span class="comment">% Genera el vector de cambio de P</span>
+0056             n = length(p);
+0057             delta_p = zeros(n, 1);
+0058             delta_p(1) = p(1);
+0059             <span class="keyword">for</span> i = 2:n
+0060                 delta_p(i) = p(i) - p(i-1);
+0061             <span class="keyword">end</span>
+0062             
+0063             <span class="comment">% Crea matriz de iteraciones de la deformacion total</span>
+0064             deltaE0Iter = zeros(n, obj.maxiter);
+0065             pE0 = zeros(n, obj.maxiter);
+0066             jacIter = zeros(n, obj.maxiter); <span class="comment">% Jacobiano (rigidez)</span>
+0067             
+0068             defTotal = zeros(n, 1); <span class="comment">% Deformacion total para cada [P,phi]_i</span>
+0069             err = zeros(n, obj.maxiter); <span class="comment">% Error de cada iteracion</span>
+0070             
+0071             iters = zeros(n, 1); <span class="comment">% Numero de iteraciones necesitados</span>
+0072             problmIter = zeros(n, 1); <span class="comment">% Indica que iteracion tuvo problemas</span>
+0073             
+0074             <span class="comment">% Cargas internas guardadas</span>
+0075             pInt = zeros(n, 1); <span class="comment">% Carga efectiva de cada (P,phi)</span>
+0076             mxInt = zeros(n, 1); <span class="comment">% Momento por cada (P,phi)</span>
+0077             myInt = zeros(n, 1); <span class="comment">% Momento por cada (P,phi)</span>
+0078             reverse_porcent = <span class="string">''</span>; <span class="comment">% Texto que tiene el porcentaje de avance</span>
+0079             
+0080             <span class="comment">% Variable que indica que las iteraciones se hacen con la primera</span>
+0081             <span class="comment">% pendiente de la matriz de rigidez</span>
+0082             usar1JAC = false;
+0083             
+0084             <span class="comment">% Almacena desde que i-incremento se usa el primer jacobiano</span>
+0085             usar1JACNITER = 1;
+0086             
+0087             <span class="comment">% Aplicacion de carga</span>
+0088             <span class="keyword">for</span> i = 1:n
+0089                 
+0090                 <span class="comment">% Iteracion con variacion del jacobiano</span>
+0091                 <span class="keyword">if</span> ~usar1JAC
+0092                     
+0093                     <span class="comment">% Calcula el primer delta_eo, considera deformacion total como la suma</span>
+0094                     <span class="comment">% de los delta_e0 de cada iteracion</span>
+0095                     jac = section.calcJac(defTotal(i), phix(i), phiy(i));
+0096                     jac = jac(1, 1); <span class="comment">% Solo escata aP/ae0</span>
+0097                     jac = jac^-1;
+0098                     jacIter(i, 1) = jac(1, 1);
+0099                     deltaE0Iter(i, 1) = jacIter(i, 1) * delta_p(i);
+0100                     
+0101                     <span class="keyword">for</span> j = 1:(obj.maxiter - 1)
+0102                         
+0103                         <span class="comment">% Incrementa iteracion</span>
+0104                         iters(i) = iters(i) + 1;
+0105                         
+0106                         <span class="comment">% Actualiza deformacion total</span>
+0107                         <span class="keyword">if</span> i &gt; 1
+0108                             defTotal(i) = defTotal(i-1) + sum(deltaE0Iter(i, :));
+0109                         <span class="keyword">else</span>
+0110                             defTotal(i) = sum(deltaE0Iter(i, :));
+0111                         <span class="keyword">end</span>
+0112                         
+0113                         <span class="comment">% Calcula la fuerza interna</span>
+0114                         pE0(i, j) = section.calcP(defTotal(i), phix(i), phiy(i));
+0115                         
+0116                         <span class="comment">% Calcula el error entre carga aproximada y exacta</span>
+0117                         err(i, j) = p(i) - pE0(i, j);
+0118                         <span class="keyword">if</span> abs(err(i, j)) &lt; obj.tol &amp;&amp; (i &gt; 1 &amp;&amp; pE0(i, j) ~= 0) || (i == 1 &amp;&amp; pE0(i, j) == 0)
+0119                             <span class="keyword">break</span>;
+0120                         <span class="keyword">end</span>
+0121                         
+0122                         <span class="comment">% Si es mayor a la tolerancia</span>
+0123                         jac = section.calcJac(sum(deltaE0Iter(i, :)), phix(i), phiy(i));
+0124                         jac = jac(1, 1); <span class="comment">% Solo escata aP/ae0</span>
+0125                         jac = jac^-1;
+0126                         jacIter(i, j+1) = jac(1, 1);
+0127                         deltaE0Iter(i, j+1) = jacIter(i, j+1) * err(i, j);
+0128                         
+0129                         <span class="comment">% Si se pasa del error detiene y usa la pendiente del primer</span>
+0130                         <span class="comment">% intervalo</span>
+0131                         <span class="keyword">if</span> j &gt; 1 &amp;&amp; (abs(deltaE0Iter(i, j+1)) &gt; abs(deltaE0Iter(i, j))) || (pE0(i, j) == 0 &amp;&amp; i &gt; 1)
+0132                             <span class="keyword">for</span> jj = 1:j + 1
+0133                                 deltaE0Iter(i, jj) = 0;
+0134                             <span class="keyword">end</span>
+0135                             usar1JAC = true;
+0136                             jacIter(i, 1) = jacIter(1, 1);
+0137                             usar1JACNITER = i;
+0138                             <span class="keyword">break</span>;
+0139                         <span class="keyword">end</span>
+0140                         
+0141                     <span class="keyword">end</span>
+0142                     
+0143                 <span class="keyword">else</span> <span class="comment">% Itera con la primera pendiente</span>
+0144                     
+0145                     <span class="comment">% Asigna el primer jacobiano</span>
+0146                     jacIter(i, 1) = jacIter(1, 1);
+0147                     
+0148                     <span class="keyword">for</span> j = 1:(obj.maxiter - 1)
+0149                         
+0150                         <span class="comment">% Incrementa iteracion</span>
+0151                         iters(i) = iters(i) + 1;
+0152                         
+0153                         <span class="comment">% Actualiza deformacion total</span>
+0154                         <span class="keyword">if</span> i &gt; 1
+0155                             defTotal(i) = defTotal(i-1) + sum(deltaE0Iter(i, :));
+0156                         <span class="keyword">else</span>
+0157                             defTotal(i) = sum(deltaE0Iter(i, :));
+0158                         <span class="keyword">end</span>
+0159                         
+0160                         <span class="comment">% Calcula la fuerza interna [N]</span>
+0161                         pE0(i, j) = section.calcP(defTotal(i), phix(i), phiy(i));
+0162                         
+0163                         <span class="comment">% Calcula el error entre carga aproximada y exacta</span>
+0164                         err(i, j) = p(i) - pE0(i, j);
+0165                         <span class="keyword">if</span> abs(err(i, j)) &lt; obj.tol
+0166                             <span class="keyword">break</span>;
+0167                         <span class="keyword">end</span>
+0168                         
+0169                         <span class="comment">% Si es mayor a la tolerancia</span>
+0170                         jacIter(i, j+1) = jacIter(i, j); <span class="comment">% Puede ser jac_iter(i, 1)</span>
+0171                         deltaE0Iter(i, j+1) = jacIter(i, j+1) * err(i, j);
+0172                         
+0173                         <span class="comment">% Si se pasa del error detiene y usa el j anterior</span>
+0174                         <span class="keyword">if</span> j &gt; 1 &amp;&amp; (abs(deltaE0Iter(i, j+1)) &gt; abs(deltaE0Iter(i, j)))
+0175                             jacIter(i, j) = 0.5 * jacIter(i, j-1);
+0176                             j = j - 1; <span class="comment">%#ok&lt;FXSET&gt;</span>
+0177                         <span class="keyword">end</span>
+0178                         
+0179                     <span class="keyword">end</span>
+0180                     
+0181                 <span class="keyword">end</span>
+0182                 
+0183                 <span class="comment">% Actualiza deformacion total</span>
+0184                 <span class="keyword">if</span> i &gt; 1
+0185                     defTotal(i) = defTotal(i-1) + sum(deltaE0Iter(i, :));
+0186                 <span class="keyword">else</span>
+0187                     defTotal(i) = sum(deltaE0Iter(i, :));
+0188                 <span class="keyword">end</span>
+0189                 
+0190                 <span class="comment">% Guarda el P calculado</span>
+0191                 pInt(i) = pE0(i, j);
+0192                 
+0193                 <span class="comment">% Calcula el momento</span>
+0194                 mxInt(i) = section.calcMx(defTotal(i), phix(i), phiy(i));
+0195                 myInt(i) = section.calcMy(defTotal(i), phix(i), phiy(i));
+0196                 
+0197                 <span class="comment">% Escribe el porcentaje</span>
+0198                 msg = sprintf(<span class="string">'\tCalculando... (%.1f/100)'</span>, i/n*100);
+0199                 fprintf([reverse_porcent, msg]);
+0200                 reverse_porcent = repmat(sprintf(<span class="string">'\b'</span>), 1, length(msg));
+0201                 
+0202             <span class="keyword">end</span>
+0203             
+0204             <span class="comment">% Imprime resultados</span>
+0205             fprintf(<span class="string">'\n'</span>);
+0206             fprintf(<span class="string">'\tIteraciones totales: %d\n'</span>, sum(iters));
+0207             fprintf(<span class="string">'\tUsado primera matriz rigidez desde i: %d\n'</span>, usar1JACNITER);
+0208             
+0209             <span class="comment">% Guarda la solucion</span>
+0210             obj.lastsole0p = {mxInt, myInt, phix, phiy, pInt, p, pE0};
+0211             
+0212         <span class="keyword">end</span> <span class="comment">% calc_e0M function</span>
+0213         
+0214         <a name="_sub2" href="#_subfunctions" class="code">function plot_e0M(obj, varargin)</a>
+0215             <span class="comment">% plot_e0M: Grafica el ultimo analisis de e0M</span>
+0216             <span class="comment">%</span>
+0217             <span class="comment">% Parametros opcionales:</span>
+0218             <span class="comment">%   factor          Factor de escala para el momento</span>
+0219             <span class="comment">%   plot            Tipo de grafico</span>
+0220             <span class="comment">%   unitlength      Unidad de longitud</span>
+0221             <span class="comment">%   unitload        Unidad de carga</span>
+0222             
+0223             p = inputParser;
+0224             p.KeepUnmatched = true;
+0225             p.addOptional(<span class="string">'factor'</span>, 1); <span class="comment">% Si se usan N*mm a tonf-m</span>
+0226             p.addOptional(<span class="string">'plot'</span>, <span class="string">'all'</span>);
+0227             p.addOptional(<span class="string">'unitlength'</span>, <span class="string">'1/mm'</span>); <span class="comment">% Unidad de largo</span>
+0228             p.addOptional(<span class="string">'unitload'</span>, <span class="string">'kN*m'</span>); <span class="comment">% Unidad de carga</span>
+0229             parse(p, varargin{:});
+0230             r = p.Results;
+0231             
+0232             <span class="keyword">if</span> isempty(obj.lastsole0p)
+0233                 error(<span class="string">'Analisis e0M no ha sido ejecutado'</span>);
+0234             <span class="keyword">end</span>
+0235             
+0236             <span class="keyword">if</span> strcmp(r.plot, <span class="string">'all'</span>) || strcmp(r.plot, <span class="string">'mphiy'</span>)
+0237                 plt = figure();
+0238                 movegui(plt, <span class="string">'center'</span>);
+0239                 set(gcf, <span class="string">'name'</span>, <span class="string">'Momento curvatura'</span>);
+0240                 
+0241                 plot(obj.lastsole0p{4}, obj.lastsole0p{1}.*r.factor, <span class="string">'-'</span>, <span class="keyword">...</span>
+0242                     <span class="string">'LineWidth'</span>, 1.5);
+0243                 hold on;
+0244                 plot(obj.lastsole0p{4}, obj.lastsole0p{2}.*r.factor, <span class="string">'-'</span>, <span class="keyword">...</span>
+0245                     <span class="string">'LineWidth'</span>, 1.5);
+0246                 grid on;
+0247                 grid minor;
+0248                 xlabel(sprintf(<span class="string">'Curvatura \\phi_y (%s)'</span>, r.unitlength));
+0249                 ylabel(sprintf(<span class="string">'Momento M (%s)'</span>, r.unitload));
+0250                 title(<span class="string">'Momento curvatura M/\phi_y'</span>);
+0251                 legend({<span class="string">'M_x'</span>, <span class="string">'M_y'</span>}, <span class="string">'location'</span>, <span class="string">'best'</span>);
+0252             <span class="keyword">end</span>
+0253             
+0254             <span class="keyword">if</span> strcmp(r.plot, <span class="string">'all'</span>) || strcmp(r.plot, <span class="string">'mphix'</span>)
+0255                 plt = figure();
+0256                 movegui(plt, <span class="string">'center'</span>);
+0257                 set(gcf, <span class="string">'name'</span>, <span class="string">'Momento curvatura'</span>);
+0258                 
+0259                 plot(obj.lastsole0p{3}, obj.lastsole0p{1}.*r.factor, <span class="string">'-'</span>, <span class="keyword">...</span>
+0260                     <span class="string">'LineWidth'</span>, 1.5);
+0261                 hold on;
+0262                 plot(obj.lastsole0p{3}, obj.lastsole0p{2}.*r.factor, <span class="string">'-'</span>, <span class="keyword">...</span>
+0263                     <span class="string">'LineWidth'</span>, 1.5);
+0264                 grid on;
+0265                 grid minor;
+0266                 xlabel(sprintf(<span class="string">'Curvatura \\phi_x (%s)'</span>, r.unitlength));
+0267                 ylabel(sprintf(<span class="string">'Momento M (%s)'</span>, r.unitload));
+0268                 title(<span class="string">'Momento curvatura M/\phi_x'</span>);
+0269                 legend({<span class="string">'M_x'</span>, <span class="string">'M_y'</span>}, <span class="string">'location'</span>, <span class="string">'best'</span>);
+0270             <span class="keyword">end</span>
+0271             
+0272             <span class="keyword">if</span> strcmp(r.plot, <span class="string">'all'</span>) || strcmp(r.plot, <span class="string">'pphix'</span>)
+0273                 plt = figure();
+0274                 movegui(plt, <span class="string">'center'</span>);
+0275                 set(gcf, <span class="string">'name'</span>, <span class="string">'P vs \phi_x'</span>);
+0276                 
+0277                 plot(obj.lastsole0p{3}, obj.lastsole0p{5}, <span class="string">'-'</span>, <span class="keyword">...</span>
+0278                     <span class="string">'LineWidth'</span>, 1.5);
+0279                 grid on;
+0280                 grid minor;
+0281                 xlabel(sprintf(<span class="string">'Curvatura \phi_x (%s)'</span>, r.unitload));
+0282                 ylabel(<span class="string">'Carga axial P'</span>);
+0283                 title(<span class="string">'Carga axial vs curvatura'</span>);
+0284             <span class="keyword">end</span>
+0285             
+0286         <span class="keyword">end</span> <span class="comment">% plote0M</span>
+0287         
+0288         <a name="_sub3" href="#_subfunctions" class="code">function disp(obj)</a>
+0289             <span class="comment">% disp: Imprime la informacion del objeto en consola</span>
+0290             
+0291             fprintf(<span class="string">'Analisis de seccion:\n'</span>);
+0292             <a href="#_sub4" class="code" title="subfunction disp(obj)">disp</a>@<a href="../../mcurv/base/BaseModel.html" class="code" title="">BaseModel</a>(obj);
+0293             
+0294         <span class="keyword">end</span> <span class="comment">% disp function</span>
+0295         
+0296     <span class="keyword">end</span> <span class="comment">% public methods</span>
+0297     
+0298 <span class="keyword">end</span> <span class="comment">% SectionAnalysis class</span></pre></div>
+<hr><address>Generated on Wed 15-May-2019 23:07:07 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

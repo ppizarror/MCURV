@@ -1,0 +1,629 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of SectionDesigner</title>
+  <meta name="keywords" content="SectionDesigner">
+  <meta name="description" content="______________________________________________________________________">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- # mcurv --><!-- menu.html section -->
+<h1>SectionDesigner
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>______________________________________________________________________</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> ______________________________________________________________________
+|                                                                      |
+|           MCURV - Toolbox para Calculo de Momento Curvatura          |
+|                                                                      |
+|                    Area de Estructuras y Geotecnia                   |
+|                   Departamento de Ingenieria Civil                   |
+|              Facultad de Ciencias Fisicas y Matematicas              |
+|                         Universidad de Chile                         |
+|                                                                      |
+| MCURV es una plataforma en MATLAB que permite realizar calculos de   |
+| momento curvatura de secciones genericas utilizando la metodologia de|
+| calculo no lineal Newton-Raphson.                                    |
+|______________________________________________________________________|
+|                                                                      |
+| SectionDesigner                                                      |
+|                                                                      |
+| Clase que define la geometria y materialidad de una seccion prima-   |
+| tica.                                                                |
+|                                                                      |
+| Autor: Pablo Pizarro R. @ppizarror.com                               |
+| Licencia: MIT                                                        |
+| Codigo fuente: https://github.com/ppizarror/MCURV                    |
+|______________________________________________________________________|</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="../../mcurv/base/BaseModel.html" class="code" title="">BaseModel</a>	______________________________________________________________________</li><li><a href="SectionDesigner.html" class="code" title="">SectionDesigner</a>	______________________________________________________________________</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="SectionDesigner.html" class="code" title="">SectionDesigner</a>	______________________________________________________________________</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function obj = SectionDesigner(matName)</a></li><li><a href="#_sub2" class="code">function addDiscreteRect(obj, xc, yc, b, h, nx, ny, material, varargin)</a></li><li><a href="#_sub3" class="code">function addFiniteArea(obj, x, y, area, material, varargin)</a></li><li><a href="#_sub4" class="code">function plt = plot(obj, varargin)</a></li><li><a href="#_sub5" class="code">function [xi, yi] = getCentroid(obj)</a></li><li><a href="#_sub6" class="code">function area = getArea(obj)</a></li><li><a href="#_sub7" class="code">function updateProps(obj)</a></li><li><a href="#_sub8" class="code">function jac = calcJac(obj, e0, phix, phiy)</a></li><li><a href="#_sub9" class="code">function mx = calcMx(obj, e0, phix, phiy)</a></li><li><a href="#_sub10" class="code">function my = calcMy(obj, e0, phix, phiy)</a></li><li><a href="#_sub11" class="code">function p = calcP(obj, e0, phix, phiy)</a></li><li><a href="#_sub12" class="code">function [xmin, xmax, ymin, ymax] = calcLimits(obj)</a></li><li><a href="#_sub13" class="code">function disp(obj)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">% ______________________________________________________________________</span>
+0002 <span class="comment">%|                                                                      |</span>
+0003 <span class="comment">%|           MCURV - Toolbox para Calculo de Momento Curvatura          |</span>
+0004 <span class="comment">%|                                                                      |</span>
+0005 <span class="comment">%|                    Area de Estructuras y Geotecnia                   |</span>
+0006 <span class="comment">%|                   Departamento de Ingenieria Civil                   |</span>
+0007 <span class="comment">%|              Facultad de Ciencias Fisicas y Matematicas              |</span>
+0008 <span class="comment">%|                         Universidad de Chile                         |</span>
+0009 <span class="comment">%|                                                                      |</span>
+0010 <span class="comment">%| MCURV es una plataforma en MATLAB que permite realizar calculos de   |</span>
+0011 <span class="comment">%| momento curvatura de secciones genericas utilizando la metodologia de|</span>
+0012 <span class="comment">%| calculo no lineal Newton-Raphson.                                    |</span>
+0013 <span class="comment">%|______________________________________________________________________|</span>
+0014 <span class="comment">%|                                                                      |</span>
+0015 <span class="comment">%| SectionDesigner                                                      |</span>
+0016 <span class="comment">%|                                                                      |</span>
+0017 <span class="comment">%| Clase que define la geometria y materialidad de una seccion prima-   |</span>
+0018 <span class="comment">%| tica.                                                                |</span>
+0019 <span class="comment">%|                                                                      |</span>
+0020 <span class="comment">%| Autor: Pablo Pizarro R. @ppizarror.com                               |</span>
+0021 <span class="comment">%| Licencia: MIT                                                        |</span>
+0022 <span class="comment">%| Codigo fuente: https://github.com/ppizarror/MCURV                    |</span>
+0023 <span class="comment">%|______________________________________________________________________|</span>
+0024 
+0025 classdef <a href="SectionDesigner.html" class="code" title="">SectionDesigner</a> &lt; <a href="../../mcurv/base/BaseModel.html" class="code" title="">BaseModel</a>
+0026     
+0027     properties(Access = private)
+0028         contGeom <span class="comment">% Geometrias objetos continuos</span>
+0029         contGeomPlot <span class="comment">% Guarda definicion de graficos de los objetos continuos</span>
+0030         contMat <span class="comment">% Materialidad objetos continuos</span>
+0031         contTotal <span class="comment">% Numero total de objetos continuos</span>
+0032         contParams <span class="comment">% Parametros adicionales objetos continuos</span>
+0033         singGeom <span class="comment">% Geometrias objetos singulares</span>
+0034         singGeomPlot <span class="comment">% Guarda definicion de graficos de los objetos singulares</span>
+0035         singMat <span class="comment">% Materialidad objetos singulares</span>
+0036         singTotal <span class="comment">% Total de objetos singulares</span>
+0037         singParams <span class="comment">% Parametros adicionales objetos singulares</span>
+0038         x0 <span class="comment">% Guarda la posicion en x del centroide</span>
+0039         y0 <span class="comment">% Guarda la posicion en y del centroide</span>
+0040     <span class="keyword">end</span> <span class="comment">% protected properties</span>
+0041     
+0042     methods(Access = public)
+0043         
+0044         <a name="_sub0" href="#_subfunctions" class="code">function obj = SectionDesigner(matName)</a>
+0045             <span class="comment">% SectionDesigner: Constructor de la clase</span>
+0046             
+0047             <span class="keyword">if</span> nargin &lt; 1
+0048                 error(<span class="string">'Numero de parametros incorrectos, uso: %s'</span>, <span class="keyword">...</span>
+0049                     <span class="string">'SectionDesigner(matName)'</span>);
+0050             <span class="keyword">end</span>
+0051             obj = obj@<a href="../../mcurv/base/BaseModel.html" class="code" title="">BaseModel</a>(matName);
+0052             
+0053             <span class="comment">% Genera las bases</span>
+0054             obj.contGeom = {};
+0055             obj.contGeomPlot = {};
+0056             obj.contMat = {};
+0057             obj.contTotal = 0;
+0058             obj.contParams = {};
+0059             obj.singParams = {};
+0060             obj.singGeom = {};
+0061             obj.singGeomPlot = {};
+0062             obj.singMat = {};
+0063             obj.singTotal = 0;
+0064             
+0065             <span class="comment">% Otros</span>
+0066             obj.x0 = 0;
+0067             obj.y0 = 0;
+0068             
+0069         <span class="keyword">end</span> <span class="comment">% SectionDesigner constructor</span>
+0070         
+0071         <a name="_sub1" href="#_subfunctions" class="code">function addDiscreteRect(obj, xc, yc, b, h, nx, ny, material, varargin)</a>
+0072             <span class="comment">% addDiscreteRect: Agrega un rectangulo discreto a la seccion,</span>
+0073             <span class="comment">% con centro (xc,yc) altura h, ancho b y una materialidad</span>
+0074             <span class="comment">%</span>
+0075             <span class="comment">% Parametros opcionales</span>
+0076             <span class="comment">%   linewidth       Ancho de linea de la seccion</span>
+0077             <span class="comment">%   transparency    Transparencia de la seccion</span>
+0078             
+0079             <span class="keyword">if</span> nargin &lt; 8
+0080                 error(<span class="string">'Numero de parametros incorrectos, uso: %s'</span>, <span class="keyword">...</span>
+0081                     <span class="string">'addDiscreteRect(obj,xc,yc,b,h,nx,ny,material,varargin)'</span>);
+0082             <span class="keyword">end</span>
+0083             <span class="keyword">if</span> ~isa(material, <span class="string">'GenericMaterial'</span>)
+0084                 error(<span class="string">'Material no es un objeto de clase GenericMaterial'</span>);
+0085             <span class="keyword">end</span>
+0086             
+0087             p = inputParser;
+0088             p.KeepUnmatched = true;
+0089             p.addOptional(<span class="string">'transparency'</span>, 0.6);
+0090             p.addOptional(<span class="string">'linewidth'</span>, 0.5);
+0091             addParameter(p, <span class="string">'MCURVgeometry'</span>, <span class="string">'rectangle'</span>);
+0092             parse(p, varargin{:});
+0093             r = p.Results;
+0094             
+0095             obj.contTotal = obj.contTotal + 1;
+0096             obj.contGeomPlot{obj.contTotal} = [xc - b / 2, yc - h / 2, b, h];
+0097             obj.contMat{obj.contTotal} = material;
+0098             obj.contParams{obj.contTotal} = r;
+0099             
+0100             <span class="comment">% Genera la discretizacion</span>
+0101             dx = b / nx;
+0102             dy = h / ny;
+0103             
+0104             tn = nx * ny; <span class="comment">% Puntos totales</span>
+0105             px = zeros(tn, 1); <span class="comment">% Puntos en x</span>
+0106             py = zeros(tn, 1); <span class="comment">% Puntos en y</span>
+0107             
+0108             y = yc - h / 2 + dy / 2;
+0109             k = 1; <span class="comment">% Guarda el numero del punto</span>
+0110             <span class="keyword">for</span> i = 1:ny
+0111                 x = xc - b / 2 + dx / 2;
+0112                 <span class="keyword">for</span> j = 1:nx
+0113                     px(k) = x;
+0114                     py(k) = y;
+0115                     x = x + dx;
+0116                     k = k + 1;
+0117                 <span class="keyword">end</span>
+0118                 y = y + dy;
+0119             <span class="keyword">end</span>
+0120             
+0121             <span class="comment">% Guarda la geometria</span>
+0122             obj.contGeom{obj.contTotal} = {px, py, dx, dy, tn, xc, yc, b * h, b, h};
+0123             
+0124         <span class="keyword">end</span> <span class="comment">% addDiscreteRect function</span>
+0125         
+0126         <a name="_sub2" href="#_subfunctions" class="code">function addFiniteArea(obj, x, y, area, material, varargin)</a>
+0127             <span class="comment">% addFiniteArea: Agrega un area finita</span>
+0128             <span class="comment">%</span>
+0129             <span class="comment">% Parametros opcionales</span>
+0130             <span class="comment">%   transparency    Transparencia de la seccion</span>
+0131             
+0132             <span class="keyword">if</span> nargin &lt; 5
+0133                 error(<span class="string">'Numero de parametros incorrectos, uso: %s'</span>, <span class="keyword">...</span>
+0134                     <span class="string">'addFiniteArea(obj,x,y,area,material,varargin)'</span>);
+0135             <span class="keyword">end</span>
+0136             <span class="keyword">if</span> ~isa(material, <span class="string">'GenericMaterial'</span>)
+0137                 error(<span class="string">'Material no es un objeto de clase GenericMaterial'</span>);
+0138             <span class="keyword">end</span>
+0139             
+0140             p = inputParser;
+0141             p.KeepUnmatched = true;
+0142             p.addOptional(<span class="string">'transparency'</span>, 0);
+0143             parse(p, varargin{:});
+0144             r = p.Results;
+0145             r.transparency = 1 - r.transparency;
+0146             
+0147             obj.singTotal = obj.singTotal + 1;
+0148             b = sqrt(area);
+0149             obj.singGeomPlot{obj.singTotal} = [x - b / 2, y - b / 2, b, b];
+0150             obj.singMat{obj.singTotal} = material;
+0151             obj.singParams{obj.singTotal} = r;
+0152             obj.singGeom{obj.singTotal} = {x, y, area};
+0153             
+0154         <span class="keyword">end</span> <span class="comment">% addFiniteArea function</span>
+0155         
+0156         <a name="_sub3" href="#_subfunctions" class="code">function plt = plot(obj, varargin)</a>
+0157             <span class="comment">% plot: Grafica la seccion</span>
+0158             <span class="comment">%</span>
+0159             <span class="comment">% Parametros opcionales:</span>
+0160             <span class="comment">%   units           Unidades del modelo</span>
+0161             <span class="comment">%   showdisc        Grafica la discretizacion</span>
+0162             <span class="comment">%   limMargin       Incrementa el margen</span>
+0163             
+0164             p = inputParser;
+0165             p.KeepUnmatched = true;
+0166             p.addOptional(<span class="string">'units'</span>, <span class="string">'mm'</span>);
+0167             p.addOptional(<span class="string">'showdisc'</span>, false);
+0168             p.addOptional(<span class="string">'limMargin'</span>, 0.1);
+0169             parse(p, varargin{:});
+0170             r = p.Results;
+0171             
+0172             <span class="comment">% Genera la figura</span>
+0173             plt = figure();
+0174             movegui(plt, <span class="string">'center'</span>);
+0175             set(gcf, <span class="string">'name'</span>, obj.getName());
+0176             hold on;
+0177             grid on;
+0178             grid minor;
+0179             axis equal;
+0180             
+0181             <span class="comment">% Agrega los elementos continuos</span>
+0182             <span class="keyword">for</span> i = 1:obj.contTotal
+0183                 <span class="keyword">if</span> strcmp(obj.contParams{i}.MCURVgeometry, <span class="string">'rectangle'</span>)
+0184                     rectangle(<span class="string">'Position'</span>, obj.contGeomPlot{i}, <span class="keyword">...</span>
+0185                         <span class="string">'FaceColor'</span>, [obj.contMat{i}.getColor(), obj.contParams{i}.transparency], <span class="keyword">...</span>
+0186                         <span class="string">'EdgeColor'</span>, obj.contMat{i}.getColor(), <span class="keyword">...</span>
+0187                         <span class="string">'LineWidth'</span>, obj.contParams{i}.linewidth);
+0188                 <span class="keyword">end</span>
+0189             <span class="keyword">end</span>
+0190             
+0191             <span class="comment">% Grafica la discretizacion de los elementos continuos</span>
+0192             <span class="keyword">if</span> r.showdisc
+0193                 <span class="keyword">for</span> i = 1:obj.contTotal
+0194                     g = obj.contGeom{i};
+0195                     px = g{1};
+0196                     py = g{2};
+0197                     dx = g{3};
+0198                     dy = g{4};
+0199                     tn = g{5};
+0200                     
+0201                     <span class="keyword">for</span> j = 1:tn
+0202                         rectangle(<span class="string">'Position'</span>, [px(j) - dx / 2, py(j) - dy / 2, dx, dy], <span class="keyword">...</span>
+0203                             <span class="string">'EdgeColor'</span>, [obj.contMat{i}.getColor(), 0.25], <span class="keyword">...</span>
+0204                             <span class="string">'LineWidth'</span>, obj.contParams{i}.linewidth*0.5);
+0205                         <a href="#_sub4" class="code" title="subfunction plt = plot(obj, varargin)">plot</a>(px(j), py(j), <span class="string">'.'</span>, <span class="string">'MarkerSize'</span>, 10, <span class="string">'Color'</span>, <span class="keyword">...</span>
+0206                             [obj.contMat{i}.getColor(), 0.25]);
+0207                     <span class="keyword">end</span>
+0208                     
+0209                 <span class="keyword">end</span>
+0210             <span class="keyword">end</span>
+0211             
+0212             <span class="comment">% Agrega los elementos discretos</span>
+0213             <span class="keyword">for</span> i = 1:obj.singTotal
+0214                 rectangle(<span class="string">'Position'</span>, obj.singGeomPlot{i}, <span class="keyword">...</span>
+0215                     <span class="string">'FaceColor'</span>, [obj.singMat{i}.getColor(), obj.singParams{i}.transparency], <span class="keyword">...</span>
+0216                     <span class="string">'EdgeColor'</span>, [obj.singMat{i}.getColor(), obj.singParams{i}.transparency]);
+0217             <span class="keyword">end</span>
+0218             
+0219             <span class="comment">% Modifica los ejes para dejar la misma escala</span>
+0220             xlim(get(gca, <span class="string">'xlim'</span>).*(1 + r.limMargin));
+0221             ylim(get(gca, <span class="string">'ylim'</span>).*(1 + r.limMargin));
+0222             
+0223             <span class="comment">% Cambia los label</span>
+0224             xlabel(sprintf(<span class="string">'x (%s)'</span>, r.units));
+0225             ylabel(sprintf(<span class="string">'y (%s)'</span>, r.units));
+0226             
+0227         <span class="keyword">end</span> <span class="comment">% plot function</span>
+0228         
+0229         <a name="_sub4" href="#_subfunctions" class="code">function [xi, yi] = getCentroid(obj)</a>
+0230             <span class="comment">% getCentroid: Calcula el centroide</span>
+0231             
+0232             <span class="comment">% Calcula el centroide en x</span>
+0233             xid = 0;
+0234             yid = 0;
+0235             at = 0; <span class="comment">% Area total</span>
+0236             <span class="keyword">for</span> i = 1:obj.contTotal
+0237                 g = obj.contGeom{i};
+0238                 xid = xid + g{6} * g{8};
+0239                 yid = yid + g{7} * g{8};
+0240                 at = at + g{8};
+0241             <span class="keyword">end</span>
+0242             
+0243             <span class="keyword">for</span> i = 1:obj.singTotal
+0244                 g = obj.singGeom{i};
+0245                 xid = xid + g{1} * g{3};
+0246                 yid = yid + g{2} * g{3};
+0247                 at = at + g{3};
+0248             <span class="keyword">end</span>
+0249             
+0250             <span class="comment">% Calcula el centride</span>
+0251             xi = xid / at;
+0252             yi = yid / at;
+0253             
+0254         <span class="keyword">end</span> <span class="comment">% getCentroid function</span>
+0255         
+0256         <a name="_sub5" href="#_subfunctions" class="code">function area = getArea(obj)</a>
+0257             <span class="comment">% getArea: Calcula el area total</span>
+0258             
+0259             area = 0; <span class="comment">% Area total</span>
+0260             <span class="keyword">for</span> i = 1:obj.contTotal
+0261                 g = obj.contGeom{i};
+0262                 area = area + g{8};
+0263             <span class="keyword">end</span>
+0264             <span class="keyword">for</span> i = 1:obj.singTotal
+0265                 g = obj.singGeom{i};
+0266                 area = area + g{3};
+0267             <span class="keyword">end</span>
+0268             
+0269         <span class="keyword">end</span> <span class="comment">% getArea function</span>
+0270         
+0271         <a name="_sub6" href="#_subfunctions" class="code">function updateProps(obj)</a>
+0272             <span class="comment">% updateProps: Actualiza las propiedades del modelo previo</span>
+0273             <span class="comment">% analisis</span>
+0274             
+0275             [x, y] = obj.getCentroid();
+0276             obj.x0 = x;
+0277             obj.y0 = y;
+0278             
+0279         <span class="keyword">end</span> <span class="comment">% updateProps function</span>
+0280         
+0281         <a name="_sub7" href="#_subfunctions" class="code">function jac = calcJac(obj, e0, phix, phiy)</a>
+0282             <span class="comment">% calcJac: Calcula el jacobiano de la seccion</span>
+0283             
+0284             <span class="comment">% Crea funcion deformacion</span>
+0285             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+0286             
+0287             <span class="comment">% Valores del jacobiano</span>
+0288             aP_ae0 = 0;
+0289             aP_aphix = 0;
+0290             aP_aphiy = 0;
+0291             aMx_aphix = 0;
+0292             aMx_aphiy = 0;
+0293             aMy_aphiy = 0;
+0294             
+0295             <span class="comment">% Calcula las integrales</span>
+0296             <span class="keyword">for</span> j = 1:obj.contTotal
+0297                 
+0298                 g = obj.contGeom{j};
+0299                 px = g{1};
+0300                 py = g{2};
+0301                 mat = obj.contMat{j};
+0302                 dd = g{3} * g{4};
+0303                 nt = g{5};
+0304                 <span class="keyword">for</span> i = 1:nt <span class="comment">% Avanza en los puntos continuos</span>
+0305                     
+0306                     <span class="comment">% Calcula la deformacion</span>
+0307                     e_i = eps(px(i), py(i));
+0308                     
+0309                     <span class="comment">% Calcula la rigidez tangente</span>
+0310                     [~, Ec] = mat.eval(e_i);
+0311                     
+0312                     <span class="comment">% Calcula los jacobianos</span>
+0313                     aP_ae0 = aP_ae0 + Ec * dd; <span class="comment">% aP/ae0</span>
+0314                     aP_aphix = aP_aphix + Ec * (py(i) - obj.y0) * dd; <span class="comment">% aP/aphix</span>
+0315                     aP_aphiy = aP_aphiy - Ec * (px(i) - obj.x0) * dd; <span class="comment">% aP/aphiy</span>
+0316                     aMx_aphix = aMx_aphix + Ec * ((py(i) - obj.y0)^2) * dd; <span class="comment">% aMx/aphix</span>
+0317                     aMx_aphiy = aMx_aphiy - Ec * (py(i) - obj.y0) * (px(i) - obj.x0) * dd; <span class="comment">% aMx/aphiy</span>
+0318                     aMy_aphiy = aMy_aphiy + Ec * ((px(i) - obj.x0)^2) * dd; <span class="comment">% aMy/aphiy</span>
+0319                     
+0320                 <span class="keyword">end</span>
+0321             <span class="keyword">end</span>
+0322             
+0323             <span class="comment">% Agrega objetos puntuales</span>
+0324             <span class="keyword">for</span> j = 1:obj.singTotal
+0325                 
+0326                 g = obj.singGeom{j};
+0327                 px = g{1};
+0328                 py = g{2};
+0329                 mat = obj.singMat{j};
+0330                 area = g{3};
+0331                 
+0332                 <span class="comment">% Calcula la deformacion</span>
+0333                 e_i = eps(px, py);
+0334                 
+0335                 <span class="comment">% Calcula la rigidez tangente del suelo</span>
+0336                 [~, Ec] = mat.eval(e_i);
+0337                 
+0338                 <span class="comment">% Calcula los jacobianos</span>
+0339                 aP_ae0 = aP_ae0 + Ec * area; <span class="comment">% aP/ae0</span>
+0340                 aP_aphix = aP_aphix + Ec * (py - obj.y0) * area; <span class="comment">% aP/aphix</span>
+0341                 aP_aphiy = aP_aphiy - Ec * (px - obj.x0) * area; <span class="comment">% aP/aphiy</span>
+0342                 aMx_aphix = aMx_aphix + Ec * ((py - obj.y0)^2) * area; <span class="comment">% aMx/aphix</span>
+0343                 aMx_aphiy = aMx_aphiy - Ec * (py - obj.y0) * (px - obj.x0) * area; <span class="comment">% aMx/aphiy</span>
+0344                 aMy_aphiy = aMy_aphiy + Ec * ((px - obj.x0)^2) * area; <span class="comment">% aMy/aphiy</span>
+0345             <span class="keyword">end</span>
+0346             
+0347             <span class="comment">% Asigna los valores iguales</span>
+0348             aMx_ae0 = aP_aphix;
+0349             aMy_ae0 = aP_aphiy;
+0350             aMy_aphix = aMx_aphiy;
+0351             
+0352             <span class="comment">% Genera el jacobiano</span>
+0353             jac = [[aP_ae0, aP_aphix, aP_aphiy]; <span class="keyword">...</span>
+0354                 [aMx_ae0, aMx_aphix, aMx_aphiy]; <span class="keyword">...</span>
+0355                 [aMy_ae0, aMy_aphix, aMy_aphiy]];
+0356             
+0357         <span class="keyword">end</span> <span class="comment">% calcJac function</span>
+0358         
+0359         <a name="_sub8" href="#_subfunctions" class="code">function mx = calcMx(obj, e0, phix, phiy)</a>
+0360             <span class="comment">% calcMx: Calcula el momento con respecto al eje x</span>
+0361             
+0362             <span class="comment">% Crea funcion deformacion</span>
+0363             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+0364             
+0365             <span class="comment">% Calcula la integral para objetos continuos</span>
+0366             mx = 0;
+0367             <span class="keyword">for</span> j = 1:obj.contTotal
+0368                 g = obj.contGeom{j};
+0369                 px = g{1};
+0370                 py = g{2};
+0371                 mat = obj.contMat{j};
+0372                 dd = g{3} * g{4};
+0373                 nt = g{5};
+0374                 
+0375                 <span class="keyword">for</span> i = 1:nt <span class="comment">% Avanza en los puntos continuos</span>
+0376                     <span class="comment">% Calcula la deformacion</span>
+0377                     e_i = eps(px(i), py(i));
+0378                     
+0379                     <span class="comment">% Calcula la tension</span>
+0380                     [fc, ~] = mat.eval(e_i);
+0381                     
+0382                     <span class="comment">% Calcula el momento</span>
+0383                     mx = mx + fc * (py(i) - obj.y0) * dd;
+0384                 <span class="keyword">end</span>
+0385             <span class="keyword">end</span>
+0386             
+0387             <span class="comment">% Agrega los objetos singulares</span>
+0388             <span class="keyword">for</span> j = 1:obj.singTotal
+0389                 g = obj.singGeom{j};
+0390                 px = g{1};
+0391                 py = g{2};
+0392                 mat = obj.singMat{j};
+0393                 area = g{3};
+0394                 
+0395                 <span class="comment">% Calcula la deformacion</span>
+0396                 e_i = eps(px, py);
+0397                 
+0398                 <span class="comment">% Calcula la tension</span>
+0399                 [fc, ~] = mat.eval(e_i);
+0400                 
+0401                 <span class="comment">% Suma el momento</span>
+0402                 mx = mx + fc * (py - obj.y0) * area;
+0403             <span class="keyword">end</span>
+0404             
+0405         <span class="keyword">end</span> <span class="comment">% calcMx function</span>
+0406         
+0407         <a name="_sub9" href="#_subfunctions" class="code">function my = calcMy(obj, e0, phix, phiy)</a>
+0408             <span class="comment">% calcMy: Calcula el momento con respecto al eje y</span>
+0409             
+0410             <span class="comment">% Crea funcion deformacion</span>
+0411             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+0412             
+0413             <span class="comment">% Calcula la integral para objetos continuos</span>
+0414             my = 0;
+0415             <span class="keyword">for</span> j = 1:obj.contTotal
+0416                 g = obj.contGeom{j};
+0417                 px = g{1};
+0418                 py = g{2};
+0419                 mat = obj.contMat{j};
+0420                 dd = g{3} * g{4};
+0421                 nt = g{5};
+0422                 
+0423                 <span class="keyword">for</span> i = 1:nt <span class="comment">% Avanza en los puntos continuos</span>
+0424                     <span class="comment">% Calcula la deformacion</span>
+0425                     e_i = eps(px(i), py(i));
+0426                     
+0427                     <span class="comment">% Calcula la tension</span>
+0428                     [fc, ~] = mat.eval(e_i);
+0429                     
+0430                     <span class="comment">% Calcula el momento</span>
+0431                     my = my - fc * (px(i) - obj.x0) * dd;
+0432                 <span class="keyword">end</span>
+0433             <span class="keyword">end</span>
+0434             
+0435             <span class="comment">% Agrega los objetos singulares</span>
+0436             <span class="keyword">for</span> j = 1:obj.singTotal
+0437                 g = obj.singGeom{j};
+0438                 px = g{1};
+0439                 py = g{2};
+0440                 mat = obj.singMat{j};
+0441                 area = g{3};
+0442                 
+0443                 <span class="comment">% Calcula la deformacion</span>
+0444                 e_i = eps(px, py);
+0445                 
+0446                 <span class="comment">% Calcula la tension</span>
+0447                 [fc, ~] = mat.eval(e_i);
+0448                 
+0449                 <span class="comment">% Suma el momento</span>
+0450                 my = my - fc * (px - obj.x0) * area;
+0451             <span class="keyword">end</span>
+0452             
+0453         <span class="keyword">end</span> <span class="comment">% calcMy function</span>
+0454         
+0455         <a name="_sub10" href="#_subfunctions" class="code">function p = calcP(obj, e0, phix, phiy)</a>
+0456             <span class="comment">% calcP: Calcula la carga axial</span>
+0457             
+0458             <span class="comment">% Crea funcion deformacion</span>
+0459             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+0460             
+0461             <span class="comment">% Calcula la integral para objetos continuos</span>
+0462             p = 0;
+0463             <span class="keyword">for</span> j = 1:obj.contTotal
+0464                 g = obj.contGeom{j};
+0465                 px = g{1};
+0466                 py = g{2};
+0467                 mat = obj.contMat{j};
+0468                 dd = g{3} * g{4};
+0469                 nt = g{5};
+0470                 
+0471                 <span class="keyword">for</span> i = 1:nt <span class="comment">% Avanza en los puntos continuos</span>
+0472                     <span class="comment">% Calcula la deformacion</span>
+0473                     e_i = eps(px(i), py(i));
+0474                     
+0475                     <span class="comment">% Calcula la tension</span>
+0476                     [fc, ~] = mat.eval(e_i);
+0477                     
+0478                     <span class="comment">% Calcula el momento</span>
+0479                     p = p + fc * dd;
+0480                 <span class="keyword">end</span>
+0481             <span class="keyword">end</span>
+0482             
+0483             <span class="comment">% Agrega los objetos singulares</span>
+0484             <span class="keyword">for</span> j = 1:obj.singTotal
+0485                 g = obj.singGeom{j};
+0486                 px = g{1};
+0487                 py = g{2};
+0488                 mat = obj.singMat{j};
+0489                 area = g{3};
+0490                 
+0491                 <span class="comment">% Calcula la deformacion</span>
+0492                 e_i = eps(px, py);
+0493                 
+0494                 <span class="comment">% Calcula la tension</span>
+0495                 [fc, ~] = mat.eval(e_i);
+0496                 
+0497                 <span class="comment">% Suma el momento</span>
+0498                 p = p + fc * area;
+0499             <span class="keyword">end</span>
+0500             
+0501         <span class="keyword">end</span> <span class="comment">% calcP function</span>
+0502         
+0503         <a name="_sub11" href="#_subfunctions" class="code">function [xmin, xmax, ymin, ymax] = calcLimits(obj)</a>
+0504             <span class="comment">% calcLimits: Calcula los limites de la seccion</span>
+0505             
+0506             xmin = Inf;
+0507             xmax = -Inf;
+0508             ymin = Inf;
+0509             ymax = -Inf;
+0510             
+0511             <span class="comment">% Recorre los objetos continuos</span>
+0512             <span class="keyword">for</span> j = 1:obj.contTotal
+0513                 g = obj.contGeom{j};
+0514                 xc = g{6};
+0515                 yc = g{7};
+0516                 b = g{9};
+0517                 h = g{10};
+0518                 xmin = min(xmin, xc-b/2);
+0519                 xmax = max(xmax, xc+b/2);
+0520                 ymin = min(ymin, yc-h/2);
+0521                 ymax = max(ymax, yc+h/2);
+0522             <span class="keyword">end</span>
+0523             
+0524             <span class="comment">% Agrega objetos puntuales</span>
+0525             <span class="keyword">for</span> j = 1:obj.singTotal
+0526                 g = obj.singGeom{j};
+0527                 pjx = g{1};
+0528                 pjy = g{2};
+0529                 xmin = min(xmin, pjx);
+0530                 xmax = max(xmax, pjx);
+0531                 ymin = min(ymin, pjy);
+0532                 ymax = max(ymax, pjy);
+0533             <span class="keyword">end</span>
+0534             
+0535         <span class="keyword">end</span> <span class="comment">% calcLimits function</span>
+0536         
+0537         <a name="_sub12" href="#_subfunctions" class="code">function disp(obj)</a>
+0538             <span class="comment">% disp: Imprime la informacion del objeto en consola</span>
+0539             
+0540             fprintf(<span class="string">'Section designer:\n'</span>);
+0541             <a href="#_sub13" class="code" title="subfunction disp(obj)">disp</a>@<a href="../../mcurv/base/BaseModel.html" class="code" title="">BaseModel</a>(obj);
+0542             
+0543             [cx, cy] = obj.getCentroid();
+0544             [xmin, xmax, ymin, ymax] = obj.calcLimits();
+0545             
+0546             fprintf(<span class="string">'\tCentroide: %.2f, %.2f\n'</span>, cx, cy);
+0547             fprintf(<span class="string">'\tArea: %.2f\n'</span>, obj.getArea());
+0548             fprintf(<span class="string">'\tAncho: %.2f\n'</span>, abs(xmax-xmin));
+0549             fprintf(<span class="string">'\tAlto: %.2f\n'</span>, abs(ymax-ymin));
+0550             fprintf(<span class="string">'\tNumero de elementos: %d\n\t\tContinuos: %d\n\t\tFinitos: %d\n'</span>, <span class="keyword">...</span>
+0551                 obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
+0552             fprintf(<span class="string">'\tLimites de la seccion:\n\t\tx: (%.2f, %.2f)\n\t\ty: (%.2f, %.2f)\n'</span>, <span class="keyword">...</span>
+0553                 xmin, xmax, ymin, ymax);
+0554             
+0555         <span class="keyword">end</span> <span class="comment">% disp function</span>
+0556         
+0557     <span class="keyword">end</span> <span class="comment">% public methods</span>
+0558     
+0559 <span class="keyword">end</span> <span class="comment">% SectionDesigner class</span></pre></div>
+<hr><address>Generated on Wed 15-May-2019 23:07:07 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>
