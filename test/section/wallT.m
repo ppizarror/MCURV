@@ -11,7 +11,7 @@ acero = ManderSteel('Acero', 420, 200000, 600, 200000/20, 0.01, 0.1, 0.3);
 acero.setColor([0.8, 0, 0]);
 
 % Agrega los elementos
-caso = '4.2';
+caso = '1';
 h = 5000;
 b = 4000;
 bw = 300;
@@ -75,13 +75,16 @@ else
 end
 
 wallt.disp();
-wallt.plot('showdisc', true, 'title', sprintf('Muro T - Caso %d', caso));
+wallt.plot('showdisc', true, 'title', sprintf('Muro T - Caso %s', caso));
 
 % Ejecuta el analisis
 analysis = SectionAnalysis('Analisis', 500, 0.01); %#ok<*UNRCH>
-analysis.calc_e0M(wallt, p, phix, phiy);
+e0 = analysis.calc_e0M(wallt, p, phix, phiy);
+
+% Grafica
 if ~strcmp(caso, '4.2')
     analysis.plot_e0M('plot', 'mphiy', 'factor', 0.0000001.*9.80665);
 else
     analysis.plot_e0M('plot', 'mphix', 'factor', 0.0000001.*9.80665);
 end
+wallt.plotStress(e0, phix, phiy, 'i', 1);

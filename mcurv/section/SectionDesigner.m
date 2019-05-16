@@ -79,7 +79,7 @@ classdef SectionDesigner < BaseModel
             
             if nargin < 8
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'addDiscreteRect(obj,xc,yc,b,h,nx,ny,material,varargin)');
+                    'addDiscreteRect(xc,yc,b,h,nx,ny,material,varargin)');
             end
             if ~isa(material, 'GenericMaterial')
                 error('Material no es un objeto de clase GenericMaterial');
@@ -120,10 +120,51 @@ classdef SectionDesigner < BaseModel
                 y = y + dy;
             end
             
+            % Genera discretizacion densa para los graficos
+            % dx -> dx/2 y dy -> dy/2
+            nxd = 2 * nx + 1;
+            nyd = 2 * ny + 1;
+            tnd = nxd * nyd; % Puntos totales
+            pxd = zeros(tnd, 1); % Puntos en x
+            pyd = zeros(tnd, 1); % Puntos en y
+            dxd = dx / 2;
+            dyd = dy / 2;
+            
+            y = yc - h / 2;
+            k = 1; % Guarda el numero del punto
+            for i = 1:nyd
+                x = xc - b / 2;
+                for j = 1:nxd
+                    pxd(k) = x;
+                    pyd(k) = y;
+                    x = x + dxd;
+                    k = k + 1;
+                end
+                y = y + dyd;
+            end
+            
             % Guarda la geometria
-            obj.contGeom{obj.contTotal} = {px, py, dx, dy, tn, xc, yc, b * h, b, h};
+            obj.contGeom{obj.contTotal} = {px, py, dx, dy, tn, xc, yc, ...
+                b * h, b, h, pxd, pyd, tnd, dxd, dyd};
             
         end % addDiscreteRect function
+        
+        function addDiscreteSquare(obj, xc, yc, L, n, material, varargin)
+            % addDiscreteSquare: Agrega un cuadrado discreto a la seccion,
+            % con centro (xc,yc) largo l y una materialidad
+            %
+            % Parametros opcionales
+            %   color           Color del area
+            %   linewidth       Ancho de linea de la seccion
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 6
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteSquare(xc,yc,L,n,material,varargin)');
+            end
+            obj.addDiscreteRect(xc,yc,L,L,n,n,material,varargin);
+            
+        end % addDiscreteSquare function
         
         function addFiniteArea(obj, x, y, area, material, varargin)
             % addFiniteArea: Agrega un area finita
@@ -134,7 +175,7 @@ classdef SectionDesigner < BaseModel
             
             if nargin < 5
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'addFiniteArea(obj,x,y,area,material,varargin)');
+                    'addFiniteArea(x,y,area,material,varargin)');
             end
             if ~isa(material, 'GenericMaterial')
                 error('Material no es un objeto de clase GenericMaterial');
@@ -153,7 +194,9 @@ classdef SectionDesigner < BaseModel
             obj.singGeomPlot{obj.singTotal} = [x - b / 2, y - b / 2, b, b];
             obj.singMat{obj.singTotal} = material;
             obj.singParams{obj.singTotal} = r;
-            obj.singGeom{obj.singTotal} = {x, y, area};
+            
+            % Guarda la geometria
+            obj.singGeom{obj.singTotal} = {x, y, area, b / 2, b / 2};
             
         end % addFiniteArea function
         
@@ -264,6 +307,129 @@ classdef SectionDesigner < BaseModel
             
         end % plot function
         
+        function plt = plotStress(obj, e0, phix, phiy, varargin)
+            % plotStress: Grafica los esfuerzos de la seccion ante un punto
+            % especifico (e0,phix,phiy)
+            %
+            % Parametros iniciales:
+            %   i               Numero de punto de evaluacion
+            %   showmesh        Muesra el meshado de la geometria
+            %   showgrid        Muestra la grilla de puntos
+            %   unitlength      Unidad de largo
+            %   unitload        Unidad de carga
+            %   Az              Angulo azimutal
+            %   EI              Elevacion del grafico
+            
+            % Verificacion inicial
+            if length(e0) ~= length(phix) || length(e0) ~= length(phiy)
+                error('e0 y phix/y deben tener igual largo');
+            end
+            
+            p = inputParser;
+            p.KeepUnmatched = true;
+            p.addOptional('i', 1);
+            p.addOptional('showmesh', false);
+            p.addOptional('showgrid', true);
+            p.addOptional('unitlength', 'mm');
+            p.addOptional('unitload', 'MPa');
+            p.addOptional('Az', 0)
+            p.addOptional('EI', 90);
+            parse(p, varargin{:});
+            r = p.Results;
+            
+            r.i = ceil(r.i);
+            if length(e0) >= r.i && r.i > 0
+                e0 = e0(r.i);
+                phix = phix(r.i);
+                phiy = phiy(r.i);
+            end
+            
+            if length(e0) ~= 1
+                error('Solo se puede graficar un punto de e0,phix/y, no un vector');
+            end
+            
+            % Genera la figura
+            plt = figure();
+            movegui(plt, 'center');
+            set(gcf, 'name', 'Esfuerzos');
+            hold on;
+            if r.showgrid
+                grid on;
+                grid minor;
+            end
+            
+            % Crea funcion deformacion
+            obj.updateProps();
+            eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+            fmeshes = {};
+            
+            % Mallado menor
+            dxm = Inf;
+            dym = Inf;
+            
+            % Genera el mallado de cada area continua
+            for i = 1:obj.contTotal
+                g = obj.contGeom{i};
+                px = g{11};
+                py = g{12};
+                nt = g{13};
+                dx = g{14};
+                dy = g{15};
+                mat = obj.contMat{i};
+                
+                dxm = min(dxm, dx);
+                dym = min(dym, dy);
+                
+                mallaX = zeros(nt, 1);
+                mallaY = zeros(nt, 1);
+                vecF = zeros(nt, 1);
+                
+                for j = 1:nt
+                    mallaX(j) = px(j);
+                    mallaY(j) = py(j);
+                    [f, ~] = mat.eval(eps(px(j), py(j)));
+                    vecF(j) = f;
+                end
+                
+                [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
+                vq = griddata(mallaX, mallaY, vecF, xq, yq);
+                mesh(xq, yq, vq);
+                surf(xq, yq, vq);
+                
+                % Grafica la linea en cero
+                if r.showmesh
+                    [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
+                    vq = griddata(mallaX, mallaY, vecF.*0, xq, yq);
+                    hold on;
+                    fmesh = mesh(xq, yq, vq);
+                    % alpha(fmesh1, 0.7);
+                    set(fmesh, 'FaceAlpha', 0);
+                    fmeshes{i} = fmesh; %#ok<*AGROW>
+                end
+            end
+            
+            % Cambia el esquema de colores
+            colormap(flipud(jet));
+            
+            % Agrega el colorbar
+            colorbar('Location', 'eastoutside');
+            shading interp;
+            
+            if r.showmesh
+                for i = 1:1:obj.contTotal
+                    set(fmeshes{i}, 'EdgeColor', [0.5, 0.5, 0.5]);
+                    set(fmeshes{i}, 'EdgeAlpha', .50);
+                end
+            end
+            
+            % Cambia los label
+            xlabel(sprintf('x (%s)', r.unitlength));
+            ylabel(sprintf('y (%s)', r.unitlength));
+            zlabel(sprintf('\\sigma (%s)', r.unitload));
+            view(r.Az, r.EI);
+            
+        end % plotStress function
+        
         function [xi, yi] = getCentroid(obj)
             % getCentroid: Calcula el centroide
             
@@ -330,7 +496,7 @@ classdef SectionDesigner < BaseModel
             aMx_aphiy = 0;
             aMy_aphiy = 0;
             
-            % Calcula las integrales
+            % Agrega objetos continuos
             for j = 1:obj.contTotal
                 
                 g = obj.contGeom{j};
@@ -339,12 +505,9 @@ classdef SectionDesigner < BaseModel
                 mat = obj.contMat{j};
                 dd = g{3} * g{4};
                 nt = g{5};
-                for i = 1:nt % Avanza en los puntos continuos
+                for i = 1:nt % Calcula la integral
                     
-                    % Calcula la deformacion
                     e_i = eps(px(i), py(i));
-                    
-                    % Calcula la rigidez tangente
                     [~, Ec] = mat.eval(e_i);
                     
                     % Calcula los jacobianos
@@ -366,10 +529,7 @@ classdef SectionDesigner < BaseModel
                 mat = obj.singMat{j};
                 area = g{3};
                 
-                % Calcula la deformacion
                 e_i = eps(px, py);
-                
-                % Calcula la rigidez tangente
                 [~, Ec] = mat.eval(e_i);
                 
                 % Calcula los jacobianos
@@ -399,7 +559,7 @@ classdef SectionDesigner < BaseModel
             % Crea funcion deformacion
             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
             
-            % Calcula la integral para objetos continuos
+            % Agrega los objetos continuos
             mx = 0;
             for j = 1:obj.contTotal
                 g = obj.contGeom{j};
@@ -408,15 +568,9 @@ classdef SectionDesigner < BaseModel
                 mat = obj.contMat{j};
                 dd = g{3} * g{4};
                 nt = g{5};
-                
-                for i = 1:nt % Avanza en los puntos continuos
-                    % Calcula la deformacion
+                for i = 1:nt % Calcula la integral
                     e_i = eps(px(i), py(i));
-                    
-                    % Calcula el esfuerzo
                     [fc, ~] = mat.eval(e_i);
-                    
-                    % Calcula el momento
                     mx = mx + fc * (py(i) - obj.y0) * dd;
                 end
             end
@@ -428,14 +582,8 @@ classdef SectionDesigner < BaseModel
                 py = g{2};
                 mat = obj.singMat{j};
                 area = g{3};
-                
-                % Calcula la deformacion
                 e_i = eps(px, py);
-                
-                % Calcula el esfuerzo
                 [fc, ~] = mat.eval(e_i);
-                
-                % Suma el momento
                 mx = mx + fc * (py - obj.y0) * area;
             end
             
@@ -447,7 +595,7 @@ classdef SectionDesigner < BaseModel
             % Crea funcion deformacion
             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
             
-            % Calcula la integral para objetos continuos
+            % Agrega los objetos continuos
             my = 0;
             for j = 1:obj.contTotal
                 g = obj.contGeom{j};
@@ -456,15 +604,9 @@ classdef SectionDesigner < BaseModel
                 mat = obj.contMat{j};
                 dd = g{3} * g{4};
                 nt = g{5};
-                
-                for i = 1:nt % Avanza en los puntos continuos
-                    % Calcula la deformacion
+                for i = 1:nt % Calcula la integral
                     e_i = eps(px(i), py(i));
-                    
-                    % Calcula el esfuerzo
                     [fc, ~] = mat.eval(e_i);
-                    
-                    % Calcula el momento
                     my = my - fc * (px(i) - obj.x0) * dd;
                 end
             end
@@ -476,14 +618,8 @@ classdef SectionDesigner < BaseModel
                 py = g{2};
                 mat = obj.singMat{j};
                 area = g{3};
-                
-                % Calcula la deformacion
                 e_i = eps(px, py);
-                
-                % Calcula el esfuerzo
                 [fc, ~] = mat.eval(e_i);
-                
-                % Suma el momento
                 my = my - fc * (px - obj.x0) * area;
             end
             
@@ -495,7 +631,7 @@ classdef SectionDesigner < BaseModel
             % Crea funcion deformacion
             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
             
-            % Calcula la integral para objetos continuos
+            % Agrega los objetos continuos
             p = 0;
             for j = 1:obj.contTotal
                 g = obj.contGeom{j};
@@ -504,15 +640,9 @@ classdef SectionDesigner < BaseModel
                 mat = obj.contMat{j};
                 dd = g{3} * g{4};
                 nt = g{5};
-                
-                for i = 1:nt % Avanza en los puntos continuos
-                    % Calcula la deformacion
+                for i = 1:nt % Calcula la integral
                     e_i = eps(px(i), py(i));
-                    
-                    % Calcula el esfuerzo
                     [fc, ~] = mat.eval(e_i);
-                    
-                    % Calcula el momento
                     p = p + fc * dd;
                 end
             end
@@ -524,14 +654,8 @@ classdef SectionDesigner < BaseModel
                 py = g{2};
                 mat = obj.singMat{j};
                 area = g{3};
-                
-                % Calcula la deformacion
                 e_i = eps(px, py);
-                
-                % Calcula el esfuerzo
                 [fc, ~] = mat.eval(e_i);
-                
-                % Suma el momento
                 p = p + fc * area;
             end
             

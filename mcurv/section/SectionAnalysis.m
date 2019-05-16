@@ -42,10 +42,14 @@ classdef SectionAnalysis < BaseModel
             
         end % SectionAnalysis constructor
         
-        function [mxInt, myInt, pInt, pE0, jacIter, deltaE0Iter, ...
-                err, defTotal, problmIter, iters] = calc_e0M(obj, section, p, phix, phiy)
+        function [defTotal, mxInt, myInt, pInt, err, iters] = calc_e0M(obj, section, p, phix, phiy)
             % calc_e0M: Calcula e0 y M dado un arreglo de cargas y
             % curvaturas
+            
+            if nargin < 5
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'calc_e0M(section,p,phix,phiy)');
+            end
             
             fprintf('Calculando e0 y M dado arreglo de P y phix,phiy\n');
             fprintf('\tSeccion: %s\n', section.getName());
@@ -70,7 +74,6 @@ classdef SectionAnalysis < BaseModel
             err = zeros(n, obj.maxiter); % Error de cada iteracion
             
             iters = zeros(n, 1); % Numero de iteraciones necesitados
-            problmIter = zeros(n, 1); % Indica que iteracion tuvo problemas
             
             % Cargas internas guardadas
             pInt = zeros(n, 1); % Carga efectiva de cada (P,phi)
@@ -325,7 +328,7 @@ classdef SectionAnalysis < BaseModel
             % Finaliza el grafico
             drawnow();
             
-        end % plote0M function
+        end % plote_0M function
         
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
