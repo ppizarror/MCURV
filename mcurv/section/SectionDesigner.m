@@ -73,9 +73,10 @@ classdef SectionDesigner < BaseModel
             % con centro (xc,yc) altura h, ancho b y una materialidad
             %
             % Parametros opcionales
+            %   color           Color del area
             %   linewidth       Ancho de linea de la seccion
             %   transparency    Transparencia de la seccion
-            
+
             if nargin < 8
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'addDiscreteRect(obj,xc,yc,b,h,nx,ny,material,varargin)');
@@ -86,8 +87,9 @@ classdef SectionDesigner < BaseModel
             
             p = inputParser;
             p.KeepUnmatched = true;
-            p.addOptional('transparency', 0.6);
+            p.addOptional('color', material.getColor());
             p.addOptional('linewidth', 0.5);
+            p.addOptional('transparency', 0.6);
             addParameter(p, 'MCURVgeometry', 'rectangle');
             parse(p, varargin{:});
             r = p.Results;
@@ -127,6 +129,7 @@ classdef SectionDesigner < BaseModel
             % addFiniteArea: Agrega un area finita
             %
             % Parametros opcionales
+            %   color           Color del area
             %   transparency    Transparencia de la seccion
             
             if nargin < 5
@@ -139,6 +142,7 @@ classdef SectionDesigner < BaseModel
             
             p = inputParser;
             p.KeepUnmatched = true;
+            p.addOptional('color', material.getColor());
             p.addOptional('transparency', 0);
             parse(p, varargin{:});
             r = p.Results;
@@ -157,22 +161,40 @@ classdef SectionDesigner < BaseModel
             % plot: Grafica la seccion
             %
             % Parametros opcionales:
-            %   units           Unidades del modelo
-            %   showdisc        Grafica la discretizacion
-            %   limMargin       Incrementa el margen
+            %   center              Muestra o no el centroide
+            %   centerColor         Color del centroide
+            %   centerLineWidth     Ancho de linea del centroide
+            %   centerMarkerSize    Tamano del marcador
+            %   centroid            Muestra o no el centroide
+            %   centroidColor       Color del centroide
+            %   centroidLineWidth   Ancho de linea del centroide
+            %   centroidMarkerSize  Tamano del marcador
+            %   limMargin           Incrementa el margen
+            %   showdisc            Grafica la discretizacion
+            %   title               Titulo del grafico
+            %   units               Unidades del modelo
             
             p = inputParser;
             p.KeepUnmatched = true;
-            p.addOptional('units', 'mm');
-            p.addOptional('showdisc', false);
+            p.addOptional('centroid', true);
+            p.addOptional('centroidColor', [1, 1, 0]);
+            p.addOptional('centroidLineWidth', 2);
+            p.addOptional('centroidMarkerSize', 10);
+            p.addOptional('center', true);
+            p.addOptional('centerColor', [0, 0, 0]);
+            p.addOptional('centerLineWidth', 0.5);
+            p.addOptional('centerMarkerSize', 10);
             p.addOptional('limMargin', 0.1);
+            p.addOptional('showdisc', false);
+            p.addOptional('title', obj.getName());
+            p.addOptional('units', 'mm');
             parse(p, varargin{:});
             r = p.Results;
             
             % Genera la figura
             plt = figure();
             movegui(plt, 'center');
-            set(gcf, 'name', obj.getName());
+            set(gcf, 'name', r.title);
             hold on;
             grid on;
             grid minor;
@@ -182,8 +204,8 @@ classdef SectionDesigner < BaseModel
             for i = 1:obj.contTotal
                 if strcmp(obj.contParams{i}.MCURVgeometry, 'rectangle')
                     rectangle('Position', obj.contGeomPlot{i}, ...
-                        'FaceColor', [obj.contMat{i}.getColor(), obj.contParams{i}.transparency], ...
-                        'EdgeColor', obj.contMat{i}.getColor(), ...
+                        'FaceColor', [obj.contParams{i}.color, obj.contParams{i}.transparency], ...
+                        'EdgeColor', obj.contParams{i}.color, ...
                         'LineWidth', obj.contParams{i}.linewidth);
                 end
             end
@@ -200,10 +222,10 @@ classdef SectionDesigner < BaseModel
                     
                     for j = 1:tn
                         rectangle('Position', [px(j) - dx / 2, py(j) - dy / 2, dx, dy], ...
-                            'EdgeColor', [obj.contMat{i}.getColor(), 0.25], ...
+                            'EdgeColor', [obj.contParams{i}.color, 0.25], ...
                             'LineWidth', obj.contParams{i}.linewidth*0.5);
                         plot(px(j), py(j), '.', 'MarkerSize', 10, 'Color', ...
-                            [obj.contMat{i}.getColor(), 0.25]);
+                            [obj.contParams{i}.color, 0.25]);
                     end
                     
                 end
@@ -212,8 +234,8 @@ classdef SectionDesigner < BaseModel
             % Agrega los elementos discretos
             for i = 1:obj.singTotal
                 rectangle('Position', obj.singGeomPlot{i}, ...
-                    'FaceColor', [obj.singMat{i}.getColor(), obj.singParams{i}.transparency], ...
-                    'EdgeColor', [obj.singMat{i}.getColor(), obj.singParams{i}.transparency]);
+                    'FaceColor', [obj.singParams{i}.color, obj.singParams{i}.transparency], ...
+                    'EdgeColor', [obj.singParams{i}.color, obj.singParams{i}.transparency]);
             end
             
             % Modifica los ejes para dejar la misma escala
@@ -223,6 +245,24 @@ classdef SectionDesigner < BaseModel
             % Cambia los label
             xlabel(sprintf('x (%s)', r.units));
             ylabel(sprintf('y (%s)', r.units));
+            title(r.title);
+            
+            % Escribe el centro de gravedad
+            if r.centroid
+                [x, y] = obj.getCentroid();
+                plot(x, y, '+', 'Color', r.centroidColor, 'MarkerSize', ...
+                    r.centroidMarkerSize, 'LineWidth', r.centroidLineWidth);
+            end
+            
+            % Escribe el centro geometrico
+            if r.center
+                [gx, gy] = obj.getCenter();
+                plot(gx, gy, '+', 'Color', r.centerColor, 'MarkerSize', ...
+                    r.centerMarkerSize, 'LineWidth', r.centerLineWidth);
+            end
+            
+            % Finaliza el grafico
+            drawnow();
             
         end % plot function
         
@@ -500,8 +540,8 @@ classdef SectionDesigner < BaseModel
             
         end % calcP function
         
-        function [xmin, xmax, ymin, ymax] = calcLimits(obj)
-            % calcLimits: Calcula los limites de la seccion
+        function [xmin, xmax, ymin, ymax] = getLimits(obj)
+            % getLimits: Calcula los limites de la seccion
             
             xmin = Inf;
             xmax = -Inf;
@@ -532,7 +572,16 @@ classdef SectionDesigner < BaseModel
                 ymax = max(ymax, pjy);
             end
             
-        end % calcLimits function
+        end % getLimits function
+        
+        function [x, y] = getCenter(obj)
+            % calcGeometricCenter: Calcula el centro del limite
+            
+            [xmin, xmax, ymin, ymax] = obj.getLimits();
+            x = (xmax+xmin)/2;
+            y = (ymax+ymin)/2;
+            
+        end % calcGeometricCenter function
         
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
@@ -541,9 +590,11 @@ classdef SectionDesigner < BaseModel
             disp@BaseModel(obj);
             
             [cx, cy] = obj.getCentroid();
-            [xmin, xmax, ymin, ymax] = obj.calcLimits();
+            [gx, gy] = obj.getCenter();
+            [xmin, xmax, ymin, ymax] = obj.getLimits();
             
             fprintf('\tCentroide: %.2f, %.2f\n', cx, cy);
+            fprintf('\tCentro geometrico: %.2f, %.2f\n', gx, gy);
             fprintf('\tArea: %.2f\n', obj.getArea());
             fprintf('\tAncho: %.2f\n', abs(xmax-xmin));
             fprintf('\tAlto: %.2f\n', abs(ymax-ymin));
@@ -551,6 +602,8 @@ classdef SectionDesigner < BaseModel
                 obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
             fprintf('\tLimites de la seccion:\n\t\tx: (%.2f, %.2f)\n\t\ty: (%.2f, %.2f)\n', ...
                 xmin, xmax, ymin, ymax);
+            
+            dispMCURV();
             
         end % disp function
         

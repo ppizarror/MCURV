@@ -48,6 +48,7 @@ classdef SectionAnalysis < BaseModel
             % curvaturas
             
             fprintf('Calculando e0 y M dado arreglo de P y phix,phiy\n');
+            fprintf('\tSeccion: %s\n', section.getName());
             
             % Actualiza propiedades
             section.updateProps();
@@ -216,14 +217,22 @@ classdef SectionAnalysis < BaseModel
             %
             % Parametros opcionales:
             %   factor          Factor de escala para el momento
+            %   medfilt         Aplica medfilt
+            %   medfiltN        Numero de filtro
+            %   limPos          Limita analisis a valores positivos
             %   plot            Tipo de grafico
             %   unitlength      Unidad de longitud
+            %   legend          Ubicacion de la leyenda
             %   unitload        Unidad de carga
             
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('factor', 1); % Si se usan N*mm a tonf-m
+            p.addOptional('limPos', true)
+            p.addOptional('medfilt', true); % Aplica medfilt
+            p.addOptional('medfiltN', 3);
             p.addOptional('plot', 'all');
+            p.addOptional('legend', 'southeast');
             p.addOptional('unitlength', '1/mm'); % Unidad de largo
             p.addOptional('unitload', 'kN*m'); % Unidad de carga
             parse(p, varargin{:});
@@ -233,57 +242,90 @@ classdef SectionAnalysis < BaseModel
                 error('Analisis e0M no ha sido ejecutado');
             end
             
+            mxInt = obj.lastsole0p{1} .* r.factor;
+            myInt = obj.lastsole0p{2} .* r.factor;
+            pInt = obj.lastsole0p{5};
+            % pRre = obj.lastsole0p{6};
+            phix = obj.lastsole0p{3};
+            phiy = obj.lastsole0p{4};
+            % e0 = obj.lastsole0p{7};
+            
+            % Aplica medfilt
+            if r.medfilt
+                mxInt = medfilt1(mxInt, r.medfiltN);
+                myInt = medfilt1(myInt, r.medfiltN);
+            end
+            
             if strcmp(r.plot, 'all') || strcmp(r.plot, 'mphiy')
                 plt = figure();
                 movegui(plt, 'center');
                 set(gcf, 'name', 'Momento curvatura');
-                
-                plot(obj.lastsole0p{4}, obj.lastsole0p{1}.*r.factor, '-', ...
-                    'LineWidth', 1.5);
+                plot(phiy, mxInt, '-', 'LineWidth', 1.5);
                 hold on;
-                plot(obj.lastsole0p{4}, obj.lastsole0p{2}.*r.factor, '-', ...
-                    'LineWidth', 1.5);
+                plot(phiy, myInt, '-', 'LineWidth', 1.5);
                 grid on;
                 grid minor;
                 xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitlength));
                 ylabel(sprintf('Momento M (%s)', r.unitload));
                 title('Momento curvatura M/\phi_y');
-                legend({'M_x', 'M_y'}, 'location', 'best');
+                legend({'M_x', 'M_y'}, 'location', r.legend);
+                if r.limPos
+                    ylim([0, max(get(gca, 'ylim'))]);
+                end
             end
             
             if strcmp(r.plot, 'all') || strcmp(r.plot, 'mphix')
                 plt = figure();
                 movegui(plt, 'center');
                 set(gcf, 'name', 'Momento curvatura');
-                
-                plot(obj.lastsole0p{3}, obj.lastsole0p{1}.*r.factor, '-', ...
-                    'LineWidth', 1.5);
+                plot(phix, mxInt, '-', 'LineWidth', 1.5);
                 hold on;
-                plot(obj.lastsole0p{3}, obj.lastsole0p{2}.*r.factor, '-', ...
-                    'LineWidth', 1.5);
+                plot(phix, myInt, '-', 'LineWidth', 1.5);
                 grid on;
                 grid minor;
                 xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitlength));
                 ylabel(sprintf('Momento M (%s)', r.unitload));
                 title('Momento curvatura M/\phi_x');
-                legend({'M_x', 'M_y'}, 'location', 'best');
+                legend({'M_x', 'M_y'}, 'location', r.legend);
+                if r.limPos
+                    ylim([0, max(get(gca, 'ylim'))]);
+                end
             end
             
             if strcmp(r.plot, 'all') || strcmp(r.plot, 'pphix')
                 plt = figure();
                 movegui(plt, 'center');
                 set(gcf, 'name', 'P vs \phi_x');
-                
-                plot(obj.lastsole0p{3}, obj.lastsole0p{5}, '-', ...
-                    'LineWidth', 1.5);
+                plot(phix, pInt, '-', 'LineWidth', 1.5);
                 grid on;
                 grid minor;
-                xlabel(sprintf('Curvatura \phi_x (%s)', r.unitload));
+                xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitload));
                 ylabel('Carga axial P');
                 title('Carga axial vs curvatura');
+                if r.limPos
+                    ylim([0, max(get(gca, 'ylim'))]);
+                end
             end
             
-        end % plote0M
+            if strcmp(r.plot, 'all') || strcmp(r.plot, 'pphiy')
+                plt = figure();
+                movegui(plt, 'center');
+                set(gcf, 'name', 'P vs \phi_y');
+                plot(phiy, pInt, '-', 'LineWidth', 1.5);
+                grid on;
+                grid minor;
+                xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitload));
+                ylabel('Carga axial P');
+                title('Carga axial vs curvatura');
+                if r.limPos
+                    ylim([0, max(get(gca, 'ylim'))]);
+                end
+            end
+            
+            % Finaliza el grafico
+            drawnow();
+            
+        end % plote0M function
         
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola

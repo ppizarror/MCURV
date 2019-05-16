@@ -1,0 +1,87 @@
+% Muro T
+% Tarea 3 - Curso CI5221-1 Hormigón Estructural II
+% Departamento de Ingenieria Civil, Universidad de Chile
+
+wallt = SectionDesigner('Muro T');
+
+% Genera los materiales
+hormigonA = HognestadModifiedConcrete('Hognestad-A', 30, 0.002, 0.004);
+hormigonB = HognestadModifiedConcrete('Hognestad-B', 40, 0.007, 0.02);
+acero = ManderSteel('Acero', 420, 200000, 600, 200000/20, 0.01, 0.1, 0.3);
+acero.setColor([0.8, 0, 0]);
+
+% Agrega los elementos
+caso = '4.2';
+h = 5000;
+b = 4000;
+bw = 300;
+d = 125;
+bw2 = 500;
+incrementos = 500;
+
+% Genera la seccion
+if strcmp(caso, '1')
+    As = 4000;
+    Asp = 4000;
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, hormigonA);
+    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, hormigonA);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, acero);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
+    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    p = linspace(0, 0, incrementos)';
+    phix = linspace(0, 0, incrementos)';
+    phiy = linspace(0, 4e-5, incrementos)';
+elseif strcmp(caso, '2')
+    As = 8000;
+    Asp = 8000;
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, hormigonA);
+    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, hormigonA);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, acero);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
+    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    p = ones(incrementos, 1) .* 9000;
+    phix = linspace(0, 0, incrementos)';
+    phiy = linspace(0, 4e-5, incrementos)';
+elseif strcmp(caso, '3')
+    As = 8000;
+    Asp = 8000;
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, hormigonB);
+    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, hormigonB);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, acero);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
+    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    p = ones(incrementos, 1) .* 9000;
+    phix = linspace(0, 0, incrementos)';
+    phiy = linspace(0, 4e-5, incrementos)';
+elseif strcmp(caso, '4.1') || strcmp(caso, '4.2')
+    As = 8000;
+    Asp = 8000;
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, hormigonB);
+    wallt.addDiscreteRect((bw - bw2)/2, 0, h-bw-bw2, bw, 80, 1, hormigonB);
+    wallt.addDiscreteRect((h - bw2)/2, 0, bw2, bw2, 10, 1, hormigonB);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, acero);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
+    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    p = ones(incrementos, 1) .* 9000;
+    if strcmp(caso, '4.1')
+        phix = linspace(0, 0, incrementos)';
+        phiy = linspace(0, 4e-5, incrementos)';
+    else
+        phix = linspace(0, 1e-4, incrementos)';
+        phiy = linspace(0, 0, incrementos)';
+    end
+else
+    error('Caso invalido');
+end
+
+wallt.disp();
+wallt.plot('showdisc', true, 'title', sprintf('Muro T - Caso %d', caso));
+
+% Ejecuta el analisis
+analysis = SectionAnalysis('Analisis', 500, 0.01); %#ok<*UNRCH>
+analysis.calc_e0M(wallt, p, phix, phiy);
+if ~strcmp(caso, '4.2')
+    analysis.plot_e0M('plot', 'mphiy', 'factor', 0.0000001.*9.80665);
+else
+    analysis.plot_e0M('plot', 'mphix', 'factor', 0.0000001.*9.80665);
+end

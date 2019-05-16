@@ -26,6 +26,5 @@ analysis = SectionAnalysis('Analisis', 100, 0.01);
 p = linspace(0, 0, 500)';
 phix = linspace(0, 1.6e-3, 500)';
 phiy = linspace(0, 0, 500)';
-[mxInt, myInt, pInt, pE0, jacIter, deltaE0Iter, ...
-    err, defTotal, problmIter, iters] = analysis.calc_e0M(hbeam, p, phix, phiy);
+analysis.calc_e0M(hbeam, p, phix, phiy);
 analysis.plot_e0M('plot', 'mphix', 'factor', 0.0000001.*9.80665);
