@@ -12,7 +12,6 @@ MCURV_ver = 'v0.10';
 
 % Agrega las carpetas de la plataforma MCURV al PATH
 addpath('mcurv');
-addpath('mcurv/analysis');
 addpath('mcurv/base');
 addpath('mcurv/lib');
 addpath('mcurv/material');
@@ -23,6 +22,5 @@ addpath('mcurv/utils');
 
 % Agrega los test al path
 addpath('test');
-addpath('test/analysis');
 addpath('test/material');
 addpath('test/section');

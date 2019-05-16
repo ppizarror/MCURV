@@ -302,9 +302,8 @@ classdef SectionDesigner < BaseModel
                 mat = obj.contMat{j};
                 dd = g{3} * g{4};
                 nt = g{5};
-                
                 for i = 1:nt % Avanza en los puntos continuos
-                    
+
                     % Calcula la deformacion
                     e_i = eps(px(i), py(i));
                     
@@ -312,12 +311,12 @@ classdef SectionDesigner < BaseModel
                     [~, Ec] = mat.eval(e_i);
                     
                     % Calcula los jacobianos
-                    aP_ae0 = aP_ae0 + Ec * dd^2; % aP/ae0
-                    aP_aphix = aP_aphix + Ec * (py(i) - obj.y0) * dd^2; % aP/aphix
-                    aP_aphiy = aP_aphiy - Ec * (px(i) - obj.x0) * dd^2; % aP/aphiy
-                    aMx_aphix = aMx_aphix + Ec * ((py(i) - obj.y0)^2) * dd^2; % aMx/aphix
-                    aMx_aphiy = aMx_aphiy - Ec * (py(i) - obj.y0) * (px(i) - obj.x0) * dd^2; % aMx/aphiy
-                    aMy_aphiy = aMy_aphiy + Ec * ((px(i) - obj.x0)^2) * dd^2; % aMy/aphiy
+                    aP_ae0 = aP_ae0 + Ec * dd; % aP/ae0
+                    aP_aphix = aP_aphix + Ec * (py(i) - obj.y0) * dd; % aP/aphix
+                    aP_aphiy = aP_aphiy - Ec * (px(i) - obj.x0) * dd; % aP/aphiy
+                    aMx_aphix = aMx_aphix + Ec * ((py(i) - obj.y0)^2) * dd; % aMx/aphix
+                    aMx_aphiy = aMx_aphiy - Ec * (py(i) - obj.y0) * (px(i) - obj.x0) * dd; % aMx/aphiy
+                    aMy_aphiy = aMy_aphiy + Ec * ((px(i) - obj.x0)^2) * dd; % aMy/aphiy
                     
                 end
             end
@@ -382,7 +381,7 @@ classdef SectionDesigner < BaseModel
                     [fc, ~] = mat.eval(e_i);
                     
                     % Calcula el momento
-                    mx = mx + fc * (py(i) - obj.y0) * dd^2;
+                    mx = mx + fc * (py(i) - obj.y0) * dd;
                 end
             end
             
@@ -430,7 +429,7 @@ classdef SectionDesigner < BaseModel
                     [fc, ~] = mat.eval(e_i);
                     
                     % Calcula el momento
-                    my = my - fc * (px(i) - obj.x0) * dd^2;
+                    my = my - fc * (px(i) - obj.x0) * dd;
                 end
             end
             
@@ -478,7 +477,7 @@ classdef SectionDesigner < BaseModel
                     [fc, ~] = mat.eval(e_i);
                     
                     % Calcula el momento
-                    p = p + fc * dd^2;
+                    p = p + fc * dd;
                 end
             end
             
