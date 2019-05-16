@@ -2,7 +2,7 @@
 % Tarea 3 - Curso CI5221-1 Hormigón Estructural II
 % Departamento de Ingenieria Civil, Universidad de Chile
 
-wallt = SectionDesigner('Muro T');
+wallt = SectionDesigner();
 
 % Genera los materiales
 hormigonA = HognestadModifiedConcrete('Hognestad-A', 30, 0.002, 0.004);
@@ -11,7 +11,7 @@ acero = ManderSteel('Acero', 420, 200000, 600, 200000/20, 0.01, 0.1, 0.3);
 acero.setColor([0.8, 0, 0]);
 
 % Agrega los elementos
-caso = '4.2';
+caso = '2';
 h = 5000;
 b = 4000;
 bw = 300;
@@ -80,13 +80,15 @@ elseif strcmp(caso, '4.2')
 else
     error('Caso invalido');
 end
+ppos = [0, 0]; % Ubicado en h/2, o sea, al centro geometrico del muro
 
+wallt.setName(sprintf('Muro T - Caso %s', caso));
 wallt.disp();
-wallt.plot('showdisc', true, 'title', sprintf('Muro T - Caso %s', caso));
+wallt.plot('showdisc', true);
 
 % Ejecuta el analisis
-analysis = SectionAnalysis('Analisis', 500, 0.01); %#ok<*UNRCH>
-e0 = analysis.calc_e0M(wallt, p, phix, phiy);
+analysis = SectionAnalysis('Analisis', 500, 0.01, 'showprogress', true);
+e0 = analysis.calc_e0M(wallt, p, phix, phiy, ppos);
 
 % Grafica
 if ~strcmp(caso, '4.2')

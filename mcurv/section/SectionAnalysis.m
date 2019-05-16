@@ -28,27 +28,50 @@ classdef SectionAnalysis < BaseModel
         maxiter % Numero maximo de iteraciones
         tol % Tolerancia del calculo
         lastsole0p % Ultima solucion de e0/P
+        showprogress % Muestra el progreso en consola
     end % protected properties
     
     methods(Access = public)
         
-        function obj = SectionAnalysis(analysisName, maxiter, tol)
+        function obj = SectionAnalysis(analysisName, maxiter, tol, varargin)
             % SectionAnalysis: Constructor de la clase
+            %
+            % Parametros opcionales:
+            %   showprogress        Muestra el porcentaje de progreso
+            
+            p = inputParser;
+            p.KeepUnmatched = true;
+            p.addOptional('showprogress', true);
+            parse(p, varargin{:});
+            r = p.Results;
             
             obj = obj@BaseModel(analysisName);
             obj.maxiter = maxiter;
             obj.tol = tol;
             obj.lastsole0p = {};
+            obj.showprogress = r.showprogress;
             
         end % SectionAnalysis constructor
         
-        function [defTotal, mxInt, myInt, pInt, err, iters] = calc_e0M(obj, section, p, phix, phiy)
+        function [defTotal, mxInt, myInt, pInt, err, iters] = calc_e0M(obj, section, p, phix, phiy, ppos)
             % calc_e0M: Calcula e0 y M dado un arreglo de cargas y
             % curvaturas
+            %
+            % Parametros:
+            %   section         Objeto de la seccion de analisis
+            %   p               Arreglo de cargas
+            %   phix            Vector de curvatura en x
+            %   phiy            Vector de curvatura en y
+            %   ppos            Posicion de la carga, si no se define se
+            %                   deja en el centroide de la seccion
             
             if nargin < 5
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'calc_e0M(section,p,phix,phiy)');
+                    'calc_e0M(section,p,phix,phiy,ppos)');
+            end
+            
+            if ~isa(section, 'SectionDesigner')
+                error('Objeto seccion debe heredar de SectionDesigner');
             end
             
             fprintf('Calculando e0 y M dado arreglo de P y phix,phiy:\n');
@@ -56,6 +79,19 @@ classdef SectionAnalysis < BaseModel
             
             % Actualiza propiedades
             section.updateProps();
+            
+            [px, py] = section.getCentroid();
+            if ~exist('ppos', 'var')
+                ppos = [px, py];
+            end
+            
+            pcentroid = '';
+            if ppos(1) == px && ppos(2) == py
+                pcentroid = ' Ubicado en centroide';
+            end
+            
+            fprintf('\tCarga externa posicion: (%.2f,%.2f)%s\n', ...
+                ppos(1), ppos(2), pcentroid);
             
             % Genera el vector de cambio de P
             n = length(p);
@@ -195,13 +231,15 @@ classdef SectionAnalysis < BaseModel
                 pInt(i) = pE0(i, j);
                 
                 % Calcula el momento
-                mxInt(i) = section.calcMx(defTotal(i), phix(i), phiy(i));
-                myInt(i) = section.calcMy(defTotal(i), phix(i), phiy(i));
+                mxInt(i) = section.calcMx(defTotal(i), phix(i), phiy(i), p(i), ppos);
+                myInt(i) = section.calcMy(defTotal(i), phix(i), phiy(i), p(i), ppos);
                 
                 % Escribe el porcentaje
-                msg = sprintf('\tCalculando... (%.1f/100)', i/n*100);
-                fprintf([reverse_porcent, msg]);
-                reverse_porcent = repmat(sprintf('\b'), 1, length(msg));
+                if obj.showprogress
+                    msg = sprintf('\tCalculando... (%.1f/100)', i/n*100);
+                    fprintf([reverse_porcent, msg]);
+                    reverse_porcent = repmat(sprintf('\b'), 1, length(msg));
+                end
                 
             end
             

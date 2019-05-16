@@ -36,7 +36,7 @@ classdef BaseModel < handle
             % BaseModel: Crea un modelo basico, requiere el nombre del
             % objeto
             
-            if ~exist('name', 'var')
+            if ~exist('name', 'var') || strcmp(name, '')
                 name = 'Undefined';
             end
             obj.objName = name;
@@ -50,6 +50,13 @@ classdef BaseModel < handle
             name = obj.objName;
             
         end % getName function
+        
+        function setName(obj, name)
+            % setName: Estabelce el nombre del objeto
+            
+            obj.objName = name;
+            
+        end % setName function
         
         function id = getID(obj)
             % getName: Retorna el identificador del objeto

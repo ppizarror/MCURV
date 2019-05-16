@@ -26,7 +26,6 @@ classdef SectionDesigner < BaseModel
     
     properties(Access = private)
         contGeom % Geometrias objetos continuos
-        contGeomPlot % Guarda definicion de graficos de los objetos continuos
         contMat % Materialidad objetos continuos
         contTotal % Numero total de objetos continuos
         contParams % Parametros adicionales objetos continuos
@@ -45,14 +44,12 @@ classdef SectionDesigner < BaseModel
             % SectionDesigner: Constructor de la clase
             
             if nargin < 1
-                error('Numero de parametros incorrectos, uso: %s', ...
-                    'SectionDesigner(matName)');
+                matName = '';
             end
             obj = obj@BaseModel(matName);
             
             % Genera las bases
             obj.contGeom = {};
-            obj.contGeomPlot = {};
             obj.contMat = {};
             obj.contTotal = 0;
             obj.contParams = {};
@@ -80,13 +77,14 @@ classdef SectionDesigner < BaseModel
             %   nx              Numero de discretizaciones en eje x
             %   ny              Numero de discretizaciones en eje y
             %   material        Material de la seccion
-            %   rotation        Angulo de giro de la seccion
             %
             % Parametros opcionales:
             %   color           Color del area
             %   linewidth       Ancho de linea de la seccion
-            %   transparency    Transparencia de la seccion
             %   rotation        Angulo de rotacion en grados
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
+            %   transparency    Transparencia de la seccion
             
             if nargin < 8
                 error('Numero de parametros incorrectos, uso: %s', ...
@@ -100,24 +98,43 @@ classdef SectionDesigner < BaseModel
             p.KeepUnmatched = true;
             p.addOptional('color', material.getColor());
             p.addOptional('linewidth', 0.5);
-            p.addOptional('transparency', 0.6);
             p.addOptional('rotation', 0);
-            addParameter(p, 'MCURVgeometry', 'rectangle');
+            p.addOptional('translatex', 0);
+            p.addOptional('translatey', 0);
+            p.addOptional('transparency', 0.6);
             parse(p, varargin{:});
             r = p.Results;
+            r.transparency = 1 - r.transparency;
+            
+            nx = ceil(nx);
+            ny = ceil(ny);
             
             if isempty(r.color)
                 r.color = material.getColor();
             end
             
+            tx = r.translatex;
+            ty = r.translatey;
+            
             % Matriz de transformacion angular
             alpha = r.rotation * pi() / 180;
-            tang = [cos(alpha), -sin(alpha); sin(alpha), cos(alpha)];
-            rotBox = abs([b, h] * tang); % Caja rotada
+            tang = [cos(alpha), sin(alpha); -sin(alpha), cos(alpha)];
+            rotBox = abs([b, h]*tang); % Caja rotada
+            prot = [xc, yc] * tang; % Punto rotado
+            
+            xpatch = [(xc - b / 2), (xc + b / 2), (xc + b / 2), (xc - b / 2)];
+            ypatch = [(yc - h / 2), (yc - h / 2), (yc + h / 2), (yc + h / 2)];
+            
+            % Rota los puntos del parche
+            xpatchR = cos(alpha) * xpatch - sin(alpha) * ypatch;
+            ypatchR = sin(alpha) * xpatch + cos(alpha) * ypatch;
+            zpatchR = zeros(1, 4);
+            
+            % Suma la translacion
+            xpatchR = xpatchR + [tx, tx, tx, tx];
+            ypatchR = ypatchR + [ty, ty, ty, ty];
             
             obj.contTotal = obj.contTotal + 1;
-            obj.contGeomPlot{obj.contTotal} = [prot(1) - rotBox(1)/2, ...
-                prot(2) - rotBox(2)/2, rotBox(1), rotBox(2)];
             obj.contMat{obj.contTotal} = material;
             obj.contParams{obj.contTotal} = r;
             
@@ -126,20 +143,21 @@ classdef SectionDesigner < BaseModel
             dy = h / ny;
             
             % Anchos rotados
-            dRot = abs([dx, dy] * tang);
+            dRot = abs([dx, dy]*tang);
             
             tn = nx * ny; % Puntos totales
             px = zeros(tn, 1); % Puntos en x
             py = zeros(tn, 1); % Puntos en y
             
-            y = - h / 2 + dy / 2;
+            y = -h / 2 + dy / 2;
             k = 1; % Guarda el numero del punto
+            
             for i = 1:ny
-                x = - b / 2 + dx / 2;
+                x = -b / 2 + dx / 2;
                 for j = 1:nx
-                    rot = [xc+x, yc+y] * tang;
-                    px(k) = rot(1);
-                    py(k) = rot(2);
+                    rot = [xc + x, yc + y] * tang;
+                    px(k) = rot(1) + tx;
+                    py(k) = rot(2) + ty;
                     x = x + dx;
                     k = k + 1;
                 end
@@ -158,13 +176,14 @@ classdef SectionDesigner < BaseModel
             dyd = h / (nyd - 1);
             dRotd = [dxd, dyd] * tang;
             
-            y = yc - h / 2;
+            y = -h / 2;
             k = 1; % Guarda el numero del punto
             for i = 1:nyd
-                x = xc - b / 2;
+                x = -b / 2;
                 for j = 1:nxd
-                    pxd(k) = x;
-                    pyd(k) = y;
+                    rot = [xc + x, yc + y] * tang;
+                    pxd(k) = rot(1) + tx;
+                    pyd(k) = rot(2) + ty;
                     x = x + dxd;
                     k = k + 1;
                 end
@@ -181,6 +200,8 @@ classdef SectionDesigner < BaseModel
                 pxd, pyd, ... % Puntos del mallado denso, rotados
                 tnd, ... % Numero de puntos del mallado denso
                 dRotd(1), dRotd(2), ... % dx,dy denso rotado
+                alpha, ... % Angulo de rotacion
+                xpatchR, ypatchR, zpatchR, ... % Posicion del parche
                 };
             
         end % addDiscreteRect function
@@ -228,6 +249,9 @@ classdef SectionDesigner < BaseModel
             % Parametros opcionales:
             %   color           Color del area
             %   linewidth       Ancho de linea de la seccion
+            %   rotation        Angulo de rotacion en grados
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
             %   transparency    Transparencia de la seccion
             
             if nargin < 12
@@ -236,13 +260,13 @@ classdef SectionDesigner < BaseModel
             end
             
             % Calcula las particiones
-            nyts = ceil(ny/h*ts);
-            nyti = ceil(ny/h*ti);
-            nyw = ny - nyts - nyti; % Alma
+            nyts = max(1, ceil(ny/h*ts));
+            nyti = max(1, ceil(ny/h*ti));
+            nyw = max(1, ny-nyts-nyti); % Alma
             bf = max(bfi, bfs);
-            nxts = ceil(nx/bf*bfs);
-            nxti = ceil(nx/bf*bfi);
-            nxw = ceil(nx/bf*tw);
+            nxts = max(1, ceil(nx/bf*bfs));
+            nxti = max(1, ceil(nx/bf*bfi));
+            nxw = max(1, ceil(nx/bf*tw));
             
             % Agrega las alas
             obj.addDiscreteRect(xc, yc+h/2-ts/2, bfs, ts, nxts, nyts, material, varargin{:});
@@ -268,6 +292,9 @@ classdef SectionDesigner < BaseModel
             % Parametros opcionales:
             %   color           Color del area
             %   linewidth       Ancho de linea de la seccion
+            %   rotation        Angulo de rotacion en grados
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
             %   transparency    Transparencia de la seccion
             
             if nargin < 10
@@ -278,8 +305,53 @@ classdef SectionDesigner < BaseModel
             
         end % addDiscreteHSection function
         
+        function addDiscreteChannel(obj, xc, yc, h, b, tf, tw, nx, ny, material, varargin)
+            % addDiscreteChannel: Agrega una seccion canal discreta
+            %
+            % Parametros requeridos:
+            %   xc          Centro de gravedad en x
+            %   yc          Centro de gravedad en y
+            %   h           Altura del canal
+            %   b           Ancho del canal
+            %   tf          Ancho del ala
+            %   tw          Ancho del alma
+            %   nx          Discretizacion en x
+            %   ny          Discretizacion en y
+            %   material    Materialidad de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   linewidth       Ancho de linea de la seccion
+            %   rotation        Angulo de rotacion en grados
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 10
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteChannel(obj,xc,yc,h,b,tf,tw,nx,ny,material,varargin)');
+            end
+            
+            % Calcula discretizacion del ala
+            nfy = max(1, ceil(ny/h*tf));
+            nwy = max(1, ny-2*nfy);
+            nwx = max(1, nx/b*tw);
+            
+            % Agrega elementos
+            obj.addDiscreteRect(xc-b/2+tw/2, yc, tw, h-2*tf, nwx, nwy, material, varargin{:});
+            obj.addDiscreteRect(xc, yc-h/2+tf/2, b, tf, nx, nfy, material, varargin{:});
+            obj.addDiscreteRect(xc, yc+h/2-tf/2, b, tf, nx, nfy, material, varargin{:});
+            
+        end % addDiscreteChannel function
+        
         function addFiniteArea(obj, xc, yc, area, material, varargin)
             % addFiniteArea: Agrega un area finita
+            %
+            % Parametros requeridos:
+            %   xc              Posicion del centro del area en x
+            %   yc              Posicion del centro del area en y
+            %   area            Area
+            %   material        Materialidad de la seccion
             %
             % Parametros opcionales:
             %   color           Color del area
@@ -330,6 +402,7 @@ classdef SectionDesigner < BaseModel
             %   centroidColor       Color del centroide
             %   centroidLineWidth   Ancho de linea del centroide
             %   centroidMarkerSize  Tamano del marcador
+            %   contCenter          Muestra el centro de los e. continuos
             %   limMargin           Incrementa el margen
             %   showdisc            Grafica la discretizacion
             %   title               Titulo del grafico
@@ -343,9 +416,10 @@ classdef SectionDesigner < BaseModel
             p.addOptional('centroidMarkerSize', 10);
             p.addOptional('center', true);
             p.addOptional('centerColor', [0, 0, 0]);
-            p.addOptional('centerLineWidth', 0.5);
+            p.addOptional('centerLineWidth', 2);
             p.addOptional('centerMarkerSize', 10);
-            p.addOptional('limMargin', 0.1);
+            p.addOptional('contCenter', false);
+            p.addOptional('limMargin', 0);
             p.addOptional('showdisc', false);
             p.addOptional('title', obj.getName());
             p.addOptional('units', 'mm');
@@ -363,12 +437,15 @@ classdef SectionDesigner < BaseModel
             
             % Agrega los elementos continuos
             for i = 1:obj.contTotal
-                if strcmp(obj.contParams{i}.MCURVgeometry, 'rectangle')
-                    rectangle('Position', obj.contGeomPlot{i}, ...
-                        'FaceColor', [obj.contParams{i}.color, obj.contParams{i}.transparency], ...
-                        'EdgeColor', obj.contParams{i}.color, ...
-                        'LineWidth', obj.contParams{i}.linewidth);
-                end
+                g = obj.contGeom{i};
+                patchx = g{17};
+                patchy = g{18};
+                patchz = g{19};
+                patch(patchx, patchy, patchz, ...
+                    'FaceColor', obj.contParams{i}.color, ...
+                    'EdgeColor', obj.contParams{i}.color, ...
+                    'LineWidth', obj.contParams{i}.linewidth*0.5, ...
+                    'FaceAlpha', obj.contParams{i}.transparency);
             end
             
             % Grafica la discretizacion de los elementos continuos
@@ -377,15 +454,20 @@ classdef SectionDesigner < BaseModel
                     g = obj.contGeom{i};
                     px = g{1};
                     py = g{2};
-                    dx = g{3};
-                    dy = g{4};
                     tn = g{5};
+                    patchx = g{17};
+                    patchy = g{18};
+                    patchz = g{19};
                     for j = 1:tn
-                        rectangle('Position', [px(j) - dx / 2, py(j) - dy / 2, dx, dy], ...
-                            'EdgeColor', [obj.contParams{i}.color, 0.25], ...
-                            'LineWidth', obj.contParams{i}.linewidth*0.5);
-                        plot(px(j), py(j), '.', 'MarkerSize', 10, 'Color', ...
-                            [obj.contParams{i}.color, 0.25]);
+                        patch(patchx, patchy, patchz, ...
+                            'FaceColor', obj.contParams{i}.color, ...
+                            'EdgeColor', obj.contParams{i}.color, ...
+                            'LineWidth', obj.contParams{i}.linewidth*0.5, ...
+                            'FaceAlpha', 0);
+                        if r.contCenter
+                            plot(px(j), py(j), '.', 'MarkerSize', 10, 'Color', ...
+                                [obj.contParams{i}.color, 0.25]);
+                        end
                     end
                 end
             end
@@ -398,8 +480,7 @@ classdef SectionDesigner < BaseModel
             end
             
             % Modifica los ejes para dejar la misma escala
-            xlim(get(gca, 'xlim').*(1 + r.limMargin));
-            ylim(get(gca, 'ylim').*(1 + r.limMargin));
+            plotLimsMargin(r.limMargin);
             
             % Cambia los label
             xlabel(sprintf('x (%s)', r.units));
@@ -429,6 +510,11 @@ classdef SectionDesigner < BaseModel
             % plotStress: Grafica los esfuerzos de la seccion ante un punto
             % especifico (e0,phix,phiy)
             %
+            % Parametros requeridos:
+            %   e0          Valor de la deformacion con respecto al centroide
+            %   phix        Curvatura en x
+            %   phiy        Curvatura en y
+            %
             % Parametros iniciales:
             %   axisequal       Aplica mismo factores a los ejes
             %   Az              Angulo azimutal
@@ -454,7 +540,7 @@ classdef SectionDesigner < BaseModel
             p.addOptional('Az', 0)
             p.addOptional('EI', 90);
             p.addOptional('i', 1);
-            p.addOptional('limMargin', 0.1);
+            p.addOptional('limMargin', 0);
             p.addOptional('normaspect', false);
             p.addOptional('plot', 'cont');
             p.addOptional('showgrid', true);
@@ -569,12 +655,15 @@ classdef SectionDesigner < BaseModel
                 
                 % Grafica el borde de los continuos
                 for i = 1:obj.contTotal
-                    if strcmp(obj.contParams{i}.MCURVgeometry, 'rectangle')
-                        rectangle('Position', obj.contGeomPlot{i}, ...
-                            'FaceColor', [obj.contParams{i}.color, 0], ...
-                            'EdgeColor', [0, 0, 0], ...
-                            'LineWidth', obj.contParams{i}.linewidth);
-                    end
+                    g = obj.contGeom{i};
+                    patchx = g{17};
+                    patchy = g{18};
+                    patchz = g{19};
+                    patch(patchx, patchy, patchz, ...
+                        'FaceColor', obj.contParams{i}.color, ...
+                        'EdgeColor', [0, 0, 0], ...
+                        'LineWidth', obj.contParams{i}.linewidth*0.5, ...
+                        'FaceAlpha', 0);
                 end
                 
                 % Grafica los singulares
@@ -622,6 +711,11 @@ classdef SectionDesigner < BaseModel
             
             % Agrega el colorbar
             h = colorbar('Location', 'eastoutside');
+            t = get(h, 'Limits');
+            T = linspace(t(1), t(2), 5);
+            set(h, 'Ticks', T);
+            TL = arrayfun(@(x) sprintf('%.2f', x), T, 'un', 0);
+            set(h, 'TickLabels', TL);
             shading interp;
             
             % Cambia los label
@@ -632,8 +726,7 @@ classdef SectionDesigner < BaseModel
             title(plotTitle);
             
             % Modifica los ejes para dejar la misma escala
-            xlim(get(gca, 'xlim').*(1 + r.limMargin));
-            ylim(get(gca, 'ylim').*(1 + r.limMargin));
+            plotLimsMargin(r.limMargin);
             
             % Aplica factor de escala en x/y
             if r.normaspect && ~r.axisequal
@@ -702,6 +795,11 @@ classdef SectionDesigner < BaseModel
         
         function jac = calcJac(obj, e0, phix, phiy)
             % calcJac: Calcula el jacobiano de la seccion
+            %
+            % Parametros requeridos:
+            %   e0          Valor de la deformacion con respecto al centroide
+            %   phix        Curvatura en x
+            %   phiy        Curvatura en y
             
             % Crea funcion deformacion
             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
@@ -771,8 +869,20 @@ classdef SectionDesigner < BaseModel
             
         end % calcJac function
         
-        function mx = calcMx(obj, e0, phix, phiy)
+        function mx = calcMx(obj, e0, phix, phiy, pext, ppos)
             % calcMx: Calcula el momento con respecto al eje x
+            %
+            % Parametros requeridos:
+            %   e0          Valor de la deformacion con respecto al centroide
+            %   phix        Curvatura en x
+            %   phiy        Curvatura en y
+            %   pext        Carga externa
+            %   ppos        Posicion de la carga externa
+            
+            if ~exist('pext', 'var')
+                pext = 0;
+                ppos = [0, 0];
+            end
             
             % Crea funcion deformacion
             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
@@ -805,10 +915,25 @@ classdef SectionDesigner < BaseModel
                 mx = mx + fc * (py - obj.y0) * area;
             end
             
+            % Agrega la carga externa
+            mx = mx - pext * (ppos(2) - obj.y0);
+            
         end % calcMx function
         
-        function my = calcMy(obj, e0, phix, phiy)
+        function my = calcMy(obj, e0, phix, phiy, pext, ppos)
             % calcMy: Calcula el momento con respecto al eje y
+            %
+            % Parametros requeridos:
+            %   e0          Valor de la deformacion con respecto al centroide
+            %   phix        Curvatura en x
+            %   phiy        Curvatura en y
+            %   pext        Carga externa
+            %   ppos        Posicion de la carga externa
+            
+            if ~exist('pext', 'var')
+                pext = 0;
+                ppos = [0, 0];
+            end
             
             % Crea funcion deformacion
             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
@@ -841,10 +966,18 @@ classdef SectionDesigner < BaseModel
                 my = my - fc * (px - obj.x0) * area;
             end
             
+            % Agrega la carga externa
+            my = my - pext * (ppos(1) - obj.x0);
+            
         end % calcMy function
         
         function p = calcP(obj, e0, phix, phiy)
-            % calcP: Calcula la carga axial
+            % calcP: Calcula la carga axial interna
+            %
+            % Parametros requeridos:
+            %   e0          Valor de la deformacion con respecto al centroide
+            %   phix        Curvatura en x
+            %   phiy        Curvatura en y
             
             % Crea funcion deformacion
             eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
@@ -914,13 +1047,13 @@ classdef SectionDesigner < BaseModel
         end % getLimits function
         
         function [x, y] = getCenter(obj)
-            % calcGeometricCenter: Calcula el centro del limite
+            % getCenter: Calcula el centro del limite
             
             [xmin, xmax, ymin, ymax] = obj.getLimits();
             x = (xmax + xmin) / 2;
             y = (ymax + ymin) / 2;
             
-        end % calcGeometricCenter function
+        end % getCenter function
         
         function [sx, sy] = getSize(obj)
             % getSize: Calcula el porte de la seccion
@@ -929,7 +1062,7 @@ classdef SectionDesigner < BaseModel
             sx = abs(xmax-xmin);
             sy = abs(ymax-ymin);
             
-        end
+        end % getSize function
         
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
