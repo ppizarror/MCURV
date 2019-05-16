@@ -76,7 +76,7 @@ classdef SectionDesigner < BaseModel
             %   color           Color del area
             %   linewidth       Ancho de linea de la seccion
             %   transparency    Transparencia de la seccion
-
+            
             if nargin < 8
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'addDiscreteRect(obj,xc,yc,b,h,nx,ny,material,varargin)');
@@ -219,7 +219,6 @@ classdef SectionDesigner < BaseModel
                     dx = g{3};
                     dy = g{4};
                     tn = g{5};
-                    
                     for j = 1:tn
                         rectangle('Position', [px(j) - dx / 2, py(j) - dy / 2, dx, dy], ...
                             'EdgeColor', [obj.contParams{i}.color, 0.25], ...
@@ -227,7 +226,6 @@ classdef SectionDesigner < BaseModel
                         plot(px(j), py(j), '.', 'MarkerSize', 10, 'Color', ...
                             [obj.contParams{i}.color, 0.25]);
                     end
-                    
                 end
             end
             
@@ -287,7 +285,7 @@ classdef SectionDesigner < BaseModel
                 at = at + g{3};
             end
             
-            % Calcula el centride
+            % Calcula el centroide
             xi = xid / at;
             yi = yid / at;
             
@@ -362,7 +360,6 @@ classdef SectionDesigner < BaseModel
             
             % Agrega objetos puntuales
             for j = 1:obj.singTotal
-                
                 g = obj.singGeom{j};
                 px = g{1};
                 py = g{2};
@@ -372,7 +369,7 @@ classdef SectionDesigner < BaseModel
                 % Calcula la deformacion
                 e_i = eps(px, py);
                 
-                % Calcula la rigidez tangente del suelo
+                % Calcula la rigidez tangente
                 [~, Ec] = mat.eval(e_i);
                 
                 % Calcula los jacobianos
@@ -416,7 +413,7 @@ classdef SectionDesigner < BaseModel
                     % Calcula la deformacion
                     e_i = eps(px(i), py(i));
                     
-                    % Calcula la tension
+                    % Calcula el esfuerzo
                     [fc, ~] = mat.eval(e_i);
                     
                     % Calcula el momento
@@ -435,7 +432,7 @@ classdef SectionDesigner < BaseModel
                 % Calcula la deformacion
                 e_i = eps(px, py);
                 
-                % Calcula la tension
+                % Calcula el esfuerzo
                 [fc, ~] = mat.eval(e_i);
                 
                 % Suma el momento
@@ -464,7 +461,7 @@ classdef SectionDesigner < BaseModel
                     % Calcula la deformacion
                     e_i = eps(px(i), py(i));
                     
-                    % Calcula la tension
+                    % Calcula el esfuerzo
                     [fc, ~] = mat.eval(e_i);
                     
                     % Calcula el momento
@@ -483,7 +480,7 @@ classdef SectionDesigner < BaseModel
                 % Calcula la deformacion
                 e_i = eps(px, py);
                 
-                % Calcula la tension
+                % Calcula el esfuerzo
                 [fc, ~] = mat.eval(e_i);
                 
                 % Suma el momento
@@ -512,7 +509,7 @@ classdef SectionDesigner < BaseModel
                     % Calcula la deformacion
                     e_i = eps(px(i), py(i));
                     
-                    % Calcula la tension
+                    % Calcula el esfuerzo
                     [fc, ~] = mat.eval(e_i);
                     
                     % Calcula el momento
@@ -531,7 +528,7 @@ classdef SectionDesigner < BaseModel
                 % Calcula la deformacion
                 e_i = eps(px, py);
                 
-                % Calcula la tension
+                % Calcula el esfuerzo
                 [fc, ~] = mat.eval(e_i);
                 
                 % Suma el momento
@@ -578,8 +575,8 @@ classdef SectionDesigner < BaseModel
             % calcGeometricCenter: Calcula el centro del limite
             
             [xmin, xmax, ymin, ymax] = obj.getLimits();
-            x = (xmax+xmin)/2;
-            y = (ymax+ymin)/2;
+            x = (xmax + xmin) / 2;
+            y = (ymax + ymin) / 2;
             
         end % calcGeometricCenter function
         
