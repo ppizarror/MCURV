@@ -19,4 +19,4 @@ La documentación del proyecto se puede encontrar en [https://ppizarror.com/MCUR
 
 ## Licencia
 
-Este proyecto está licenciado bajo la licencia [MIT](https://opensource.org/licenses/MIT)
+Este proyecto está licenciado bajo la licencia MIT [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT)
