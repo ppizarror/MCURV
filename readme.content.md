@@ -4,7 +4,7 @@ La documentación del proyecto se puede encontrar en [https://ppizarror.com/MCUR
 
 ## Autor
 
-Pablo Pizarro (pablo.pizarro@ing.uchile.cl)
+[Pablo Pizarro R.](https://ppizarror.com) | 2019
 
 ## Licencia
 
