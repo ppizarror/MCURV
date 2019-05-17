@@ -61,88 +61,9 @@ This function is called by:
 <li><a href="BaseModel.html" class="code" title="">BaseModel</a>	______________________________________________________________________</li><li><a href="../../mcurv/material/GenericMaterial.html" class="code" title="">GenericMaterial</a>	______________________________________________________________________</li><li><a href="../../mcurv/section/SectionAnalysis.html" class="code" title="">SectionAnalysis</a>	______________________________________________________________________</li><li><a href="../../mcurv/section/SectionDesigner.html" class="code" title="">SectionDesigner</a>	______________________________________________________________________</li></ul>
 <!-- crossreference -->
 
-<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
-<ul style="list-style-image:url(../../matlabicon.gif)">
-<li><a href="#_sub1" class="code">function obj = BaseModel(name)</a></li><li><a href="#_sub2" class="code">function name = getName(obj)</a></li><li><a href="#_sub3" class="code">function id = getID(obj)</a></li><li><a href="#_sub4" class="code">function e = equals(obj, b)</a></li><li><a href="#_sub5" class="code">function disp(obj)</a></li></ul>
 
-<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
-<div class="fragment"><pre>0001 <span class="comment">% ______________________________________________________________________</span>
-0002 <span class="comment">%|                                                                      |</span>
-0003 <span class="comment">%|           MCURV - Toolbox para Calculo de Momento Curvatura          |</span>
-0004 <span class="comment">%|                                                                      |</span>
-0005 <span class="comment">%|                    Area de Estructuras y Geotecnia                   |</span>
-0006 <span class="comment">%|                   Departamento de Ingenieria Civil                   |</span>
-0007 <span class="comment">%|              Facultad de Ciencias Fisicas y Matematicas              |</span>
-0008 <span class="comment">%|                         Universidad de Chile                         |</span>
-0009 <span class="comment">%|                                                                      |</span>
-0010 <span class="comment">%| MCURV es una plataforma en MATLAB que permite realizar calculos de   |</span>
-0011 <span class="comment">%| momento curvatura de secciones genericas utilizando la metodologia de|</span>
-0012 <span class="comment">%| calculo no lineal Newton-Raphson.                                    |</span>
-0013 <span class="comment">%|______________________________________________________________________|</span>
-0014 <span class="comment">%|                                                                      |</span>
-0015 <span class="comment">%| BaseModel                                                            |</span>
-0016 <span class="comment">%|                                                                      |</span>
-0017 <span class="comment">%| Definicion de un modelo u elemento basico de la plataforma, posee    |</span>
-0018 <span class="comment">%| funciones generales para definir objetos con nombres e identificado- |</span>
-0019 <span class="comment">%| res.                                                                 |</span>
-0020 <span class="comment">%|                                                                      |</span>
-0021 <span class="comment">%| Autor: Pablo Pizarro R. @ppizarror.com                               |</span>
-0022 <span class="comment">%| Licencia: MIT                                                        |</span>
-0023 <span class="comment">%| Codigo fuente: https://github.com/ppizarror/MCURV                    |</span>
-0024 <span class="comment">%|______________________________________________________________________|</span>
-0025 
-0026 classdef <a href="BaseModel.html" class="code" title="">BaseModel</a> &lt; handle
-0027  
-0028     properties(Access = private)
-0029         objName <span class="comment">% Nombre del objeto</span>
-0030         objID <span class="comment">% Identificador del objeto</span>
-0031     <span class="keyword">end</span> <span class="comment">% private properties</span>
-0032     
-0033     methods(Access = public)
-0034         
-0035         <a name="_sub0" href="#_subfunctions" class="code">function obj = BaseModel(name)</a>
-0036             <span class="comment">% BaseModel: Crea un modelo basico, requiere el nombre del</span>
-0037             <span class="comment">% objeto</span>
-0038             
-0039             <span class="keyword">if</span> ~exist(<span class="string">'name'</span>, <span class="string">'var'</span>)
-0040                 name = <span class="string">'Undefined'</span>;
-0041             <span class="keyword">end</span>
-0042             obj.objName = name;
-0043             obj.objID = char(java.util.UUID.randomUUID);
-0044             
-0045         <span class="keyword">end</span> <span class="comment">% BaseModel constructor</span>
-0046         
-0047         <a name="_sub1" href="#_subfunctions" class="code">function name = getName(obj)</a>
-0048             <span class="comment">% getName: Retorna el nombre del objeto</span>
-0049             
-0050             name = obj.objName;
-0051             
-0052         <span class="keyword">end</span> <span class="comment">% getName function</span>
-0053         
-0054         <a name="_sub2" href="#_subfunctions" class="code">function id = getID(obj)</a>
-0055             <span class="comment">% getName: Retorna el identificador del objeto</span>
-0056             
-0057             id = obj.objID;
-0058             
-0059         <span class="keyword">end</span> <span class="comment">% getID function</span>
-0060         
-0061         <a name="_sub3" href="#_subfunctions" class="code">function e = equals(obj, b)</a>
-0062             <span class="comment">% equals: Verifica que el objeto sea identico a otro</span>
-0063             
-0064             e = strcmp(obj.objID, b.objID);
-0065             
-0066         <span class="keyword">end</span> <span class="comment">% equals function</span>
-0067         
-0068         <a name="_sub4" href="#_subfunctions" class="code">function disp(obj)</a>
-0069             <span class="comment">% disp: Imprime la informacion del objeto en la consola</span>
-0070             
-0071             fprintf(<span class="string">'\tEtiqueta: %s\n'</span>, obj.objName);
-0072             
-0073         <span class="keyword">end</span> <span class="comment">% disp function</span>
-0074         
-0075     <span class="keyword">end</span> <span class="comment">% public methods</span>
-0076     
-0077 <span class="keyword">end</span> <span class="comment">% BaseModel class</span></pre></div>
-<hr><address>Generated on Thu 16-May-2019 02:09:19 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+
+
+<hr><address>Generated on Thu 16-May-2019 21:20:58 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
 </body>
 </html>
