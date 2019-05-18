@@ -58,9 +58,7 @@ classdef SectionDesigner < BaseModel
             obj.singGeomPlot = {};
             obj.singMat = {};
             obj.singTotal = 0;
-            
-            % Otros
-            obj.x0 = 0;
+            obj.x0 = 0; % Otros
             obj.y0 = 0;
             
         end % SectionDesigner constructor

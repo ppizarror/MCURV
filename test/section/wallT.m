@@ -11,7 +11,7 @@ acero = ManderSteel('Acero', 420, 200000, 600, 200000/20, 0.01, 0.1, 0.3);
 acero.setColor([0.8, 0, 0]);
 
 % Agrega los elementos
-caso = '3';
+caso = '1';
 h = 5000;
 b = 4000;
 bw = 300;
