@@ -23,8 +23,8 @@ hbeam.plot('showdisc', true);
 
 % Ejecuta un analisis
 analysis = SectionAnalysis('Analisis', 100, 0.01);
-p = linspace(0, 0, 500)';
+p = linspace(0, 0, 500*1000)'; % N
 phix = linspace(0, 1.6e-3, 500)';
 phiy = linspace(0, 0, 500)';
 analysis.calc_e0M(hbeam, p, phix, phiy);
-analysis.plot_e0M('plot', 'mphix', 'factor', 0.0000001.*9.80665);
+analysis.plot_e0M('plot', 'mphix', 'factor', 1e-6); % N*mm -> kN*m

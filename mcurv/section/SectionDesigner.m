@@ -521,8 +521,12 @@ classdef SectionDesigner < BaseModel
             %   EI              Elevacion del grafico
             %   i               Numero de punto de evaluacion
             %   limMargin       Incrementa el margen
+            %   mfactor         Factor momento
+            %   munits          Unidad de momento
             %   normaspect      Normaliza el aspecto
+            %   pfactor         Factor de carga axial
             %   plot            Tipo de grafico (cont,sing)
+            %   punits          Unidad de carga axial
             %   showgrid        Muestra la grilla de puntos
             %   showmesh        Muesra el meshado de la geometria
             %   unitlength      Unidad de largo
@@ -541,8 +545,12 @@ classdef SectionDesigner < BaseModel
             p.addOptional('EI', 90);
             p.addOptional('i', 1);
             p.addOptional('limMargin', 0);
+            p.addOptional('mfactor', 1);
+            p.addOptional('munits', 'kN*m');
             p.addOptional('normaspect', false);
+            p.addOptional('pfactor', 1);
             p.addOptional('plot', 'cont');
+            p.addOptional('punits', 'kN');
             p.addOptional('showgrid', true);
             p.addOptional('showmesh', false);
             p.addOptional('unitlength', 'mm');
@@ -574,9 +582,9 @@ classdef SectionDesigner < BaseModel
             mx = obj.calcMx(e0, phix, phiy);
             my = obj.calcMy(e0, phix, phiy);
             fprintf('\tCargas:\n');
-            fprintf('\t\tP axial: %.2f\n', p);
-            fprintf('\t\tMx: %.2f\n', mx);
-            fprintf('\t\tMy: %.2f\n', my);
+            fprintf('\t\tP axial: %.2f %s\n', p * r.pfactor, r.punits);
+            fprintf('\t\tMx: %.2f %s\n', mx * r.mfactor, r.munits);
+            fprintf('\t\tMy: %.2f %s\n', my * r.mfactor, r.munits);
             
             % Genera el titulo
             plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...

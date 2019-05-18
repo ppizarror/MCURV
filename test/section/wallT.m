@@ -11,7 +11,7 @@ acero = ManderSteel('Acero', 420, 200000, 600, 200000/20, 0.01, 0.1, 0.3);
 acero.setColor([0.8, 0, 0]);
 
 % Agrega los elementos
-caso = '2';
+caso = '3';
 h = 5000;
 b = 4000;
 bw = 300;
@@ -39,7 +39,7 @@ elseif strcmp(caso, '2')
     wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, acero);
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
     wallt.addFiniteArea(h/2-d, 0, Asp, acero);
-    p = ones(incrementos, 1) .* 9000;
+    p = ones(incrementos, 1) .* 9000 * 1000; % N
     phix = linspace(0, 0, incrementos)';
     phiy = linspace(0, 4e-5, incrementos)';
 elseif strcmp(caso, '3')
@@ -50,7 +50,7 @@ elseif strcmp(caso, '3')
     wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, acero);
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
     wallt.addFiniteArea(h/2-d, 0, Asp, acero);
-    p = ones(incrementos, 1) .* 9000;
+    p = ones(incrementos, 1) .* 9000 * 1000; % N
     phix = linspace(0, 0, incrementos)';
     phiy = linspace(0, 4e-5, incrementos)';
 elseif strcmp(caso, '4.1')
@@ -62,7 +62,7 @@ elseif strcmp(caso, '4.1')
     wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, acero);
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
     wallt.addFiniteArea(h/2-d, 0, Asp, acero);
-    p = ones(incrementos, 1) .* 9000;
+    p = ones(incrementos, 1) .* 9000 * 1000; % N
     phix = linspace(0, 0, incrementos)';
     phiy = linspace(0, 4e-5, incrementos)';
 elseif strcmp(caso, '4.2')
@@ -74,7 +74,7 @@ elseif strcmp(caso, '4.2')
     wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, acero);
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, acero);
     wallt.addFiniteArea(h/2-d, 0, Asp, acero);
-    p = ones(incrementos, 1) .* 9000;
+    p = ones(incrementos, 1) .* 9000 * 1000; % N
     phix = linspace(0, 4.5e-5, incrementos)';
     phiy = linspace(0, 0, incrementos)';
 else
@@ -92,8 +92,8 @@ e0 = analysis.calc_e0M(wallt, p, phix, phiy, ppos);
 
 % Grafica
 if ~strcmp(caso, '4.2')
-    analysis.plot_e0M('plot', 'mphiy', 'factor', 0.0000001.*9.80665);
+    analysis.plot_e0M('plot', 'mphiy', 'factor', 1e-6); % N*mm -> kN*m
 else
-    analysis.plot_e0M('plot', 'mphix', 'factor', 0.0000001.*9.80665);
+    analysis.plot_e0M('plot', 'mphix', 'factor', 1e-6); % N*mm -> kN*m
 end
-wallt.plotStress(e0, phix, phiy, 'i', 1);
+wallt.plotStress(e0, phix, phiy, 'i', 1, 'mfactor', 1e-6, 'pfactor', 1e-3);

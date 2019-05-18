@@ -249,7 +249,7 @@ classdef SectionAnalysis < BaseModel
             fprintf('\tUsado primera matriz rigidez desde i: %d\n', usar1JACNITER);
             
             % Guarda la solucion
-            obj.lastsole0p = {mxInt, myInt, phix, phiy, pInt, p, pE0};
+            obj.lastsole0p = {mxInt, myInt, phix, phiy, pInt, p, pE0, section.getName()};
             
         end % calc_e0M function
         
@@ -290,6 +290,7 @@ classdef SectionAnalysis < BaseModel
             phix = obj.lastsole0p{3};
             phiy = obj.lastsole0p{4};
             % e0 = obj.lastsole0p{7};
+            secName = obj.lastsole0p{8};
             
             % Aplica medfilt
             if r.medfilt
@@ -308,7 +309,7 @@ classdef SectionAnalysis < BaseModel
                 grid minor;
                 xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitlength));
                 ylabel(sprintf('Momento M (%s)', r.unitload));
-                title('Momento curvatura M/\phi_y');
+                title(sprintf('Momento curvatura M/\\phi_y - %s', secName));
                 legend({'M_x', 'M_y'}, 'location', r.legend);
                 if r.limPos
                     ylim([0, max(get(gca, 'ylim'))]);
@@ -326,7 +327,7 @@ classdef SectionAnalysis < BaseModel
                 grid minor;
                 xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitlength));
                 ylabel(sprintf('Momento M (%s)', r.unitload));
-                title('Momento curvatura M/\phi_x');
+                title(sprintf('Momento curvatura M/\\phi_x - %s', secName));
                 legend({'M_x', 'M_y'}, 'location', r.legend);
                 if r.limPos
                     ylim([0, max(get(gca, 'ylim'))]);
@@ -342,7 +343,7 @@ classdef SectionAnalysis < BaseModel
                 grid minor;
                 xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitload));
                 ylabel('Carga axial P');
-                title('Carga axial vs curvatura');
+                title(sprintf('Carga axial vs curvatura \\phi_x - %s', secName));
                 if r.limPos
                     ylim([0, max(get(gca, 'ylim'))]);
                 end
@@ -357,7 +358,7 @@ classdef SectionAnalysis < BaseModel
                 grid minor;
                 xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitload));
                 ylabel('Carga axial P');
-                title('Carga axial vs curvatura');
+                title(sprintf('Carga axial vs curvatura \\phi_y - %s', secName));
                 if r.limPos
                     ylim([0, max(get(gca, 'ylim'))]);
                 end

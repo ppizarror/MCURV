@@ -20,11 +20,11 @@ simplebeam.plot('showdisc', true);
 
 % Ejecuta un analisis
 analysis = SectionAnalysis('Analisis', 100, 0.5);
-p = linspace(0, 0, 100)';
+p = linspace(0, 0, 100*1000)';
 phix = linspace(0, 1.2e-4, 100)';
 phiy = linspace(0, 0, 100)';
 e0 = analysis.calc_e0M(simplebeam, p, phix, phiy);
 
 % Grafica resultados
-analysis.plot_e0M('plot', 'mphix', 'factor', 0.00010197162129779283 / 1000);
+analysis.plot_e0M('plot', 'mphix', 'factor', 1e-6); % N*mm -> kN*m
 simplebeam.plotStress(e0, phix, phiy, 'i', 1);
