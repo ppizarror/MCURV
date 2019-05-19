@@ -58,7 +58,9 @@ classdef SectionDesigner < BaseModel
             obj.singGeomPlot = {};
             obj.singMat = {};
             obj.singTotal = 0;
-            obj.x0 = 0; % Otros
+            
+            % Otros
+            obj.x0 = 0;
             obj.y0 = 0;
             
         end % SectionDesigner constructor
@@ -90,6 +92,10 @@ classdef SectionDesigner < BaseModel
             end
             if ~isa(material, 'GenericMaterial')
                 error('Material no es un objeto de clase GenericMaterial');
+            end
+            
+            if nx == 0 || ny == 0
+                error('La discretizacion del elemento no puede ser nula');
             end
             
             p = inputParser;
@@ -150,12 +156,24 @@ classdef SectionDesigner < BaseModel
             y = -h / 2 + dy / 2;
             k = 1; % Guarda el numero del punto
             
+            % Parches discretizados
+            xpatchD = {};
+            ypatchD = {};
+            
             for i = 1:ny
                 x = -b / 2 + dx / 2;
                 for j = 1:nx
                     rot = [xc + x, yc + y] * tang;
                     px(k) = rot(1) + tx;
                     py(k) = rot(2) + ty;
+                    
+                    % Crea el parche de la discretizacion
+                    xpatch = [(xc + x - dx / 2), (xc + x + dx / 2), (xc + x + dx / 2), (xc + x - dx / 2)];
+                    ypatch = [(yc + y - dy / 2), (yc + y - dy / 2), (yc + y + dy / 2), (yc + y + dy / 2)];
+                    
+                    % Rota los puntos del parche
+                    xpatchD{k} = cos(alpha) * xpatch - sin(alpha) * ypatch;
+                    ypatchD{k} = sin(alpha) * xpatch + cos(alpha) * ypatch;
                     x = x + dx;
                     k = k + 1;
                 end
@@ -200,6 +218,7 @@ classdef SectionDesigner < BaseModel
                 dRotd(1), dRotd(2), ... % dx,dy denso rotado
                 alpha, ... % Angulo de rotacion
                 xpatchR, ypatchR, zpatchR, ... % Posicion del parche
+                xpatchD, ypatchD; ... % Posicion del parche discretizado
                 };
             
         end % addDiscreteRect function
@@ -228,15 +247,15 @@ classdef SectionDesigner < BaseModel
             
         end % addDiscreteSquare function
         
-        function addDiscreteISection(obj, xc, yc, h, bfi, bfs, ti, ts, tw, nx, ny, material, varargin)
+        function addDiscreteISection(obj, xc, yc, bi, bs, h, ti, ts, tw, nx, ny, material, varargin)
             % addDiscreteISection: Agrega una seccion I discreta
             %
             % Parametros requeridos:
             %   xc              Centro de gravedad
             %   yc              Centro de gravedad
-            %   h               Altura de la seccion
-            %   bf              Ancho del ala inferior
+            %   bi              Ancho del ala inferior
             %   bs              Ancho del ala superior
+            %   h               Altura de la seccion
             %   ti              Espesor del ala inferior
             %   ts              Espesor del ala superior
             %   tw              Espesor del alma
@@ -254,33 +273,33 @@ classdef SectionDesigner < BaseModel
             
             if nargin < 12
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'addDiscreteISection(xc,yc,h,bfi,bfs,ti,ts,tw,nx,ny,material,varargin)');
+                    'addDiscreteISection(xc,yc,bi,bs,h,ti,ts,tw,nx,ny,material,varargin)');
             end
             
             % Calcula las particiones
             nyts = max(1, ceil(ny/h*ts));
             nyti = max(1, ceil(ny/h*ti));
             nyw = max(1, ny-nyts-nyti); % Alma
-            bf = max(bfi, bfs);
-            nxts = max(1, ceil(nx/bf*bfs));
-            nxti = max(1, ceil(nx/bf*bfi));
+            bf = max(bi, bs);
+            nxts = max(1, ceil(nx/bf*bs));
+            nxti = max(1, ceil(nx/bf*bi));
             nxw = max(1, ceil(nx/bf*tw));
             
             % Agrega las alas
-            obj.addDiscreteRect(xc, yc+h/2-ts/2, bfs, ts, nxts, nyts, material, varargin{:});
-            obj.addDiscreteRect(xc, yc-h/2+ti/2, bfi, ti, nxti, nyti, material, varargin{:});
+            obj.addDiscreteRect(xc, yc+h/2-ts/2, bs, ts, nxts, nyts, material, varargin{:});
+            obj.addDiscreteRect(xc, yc-h/2+ti/2, bi, ti, nxti, nyti, material, varargin{:});
             obj.addDiscreteRect(xc, yc, tw, h-ti-ts, nxw, nyw, material, varargin{:});
             
         end % addDiscreteISection function
         
-        function addDiscreteHSection(obj, xc, yc, h, b, tf, tw, nx, ny, material, varargin)
+        function addDiscreteHSection(obj, xc, yc, b, h, tf, tw, nx, ny, material, varargin)
             % addDiscreteHSection: Agrega una seccion H discreta
             %
             % Parametros requeridos:
             %   xc              Centro de gravedad
             %   yc              Centro de gravedad
-            %   h               Altura de la seccion
             %   b               Ancho del ala
+            %   h               Altura de la seccion
             %   tf              Espesor del ala
             %   tw              Espesor del alma
             %   nx              Discretizacion en el eje x
@@ -297,20 +316,20 @@ classdef SectionDesigner < BaseModel
             
             if nargin < 10
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'addDiscreteHSection(xc,yc,h,b,tf,tw,nx,ny,material,varargin)');
+                    'addDiscreteHSection(xc,yc,b,h,tf,tw,nx,ny,material,varargin)');
             end
-            obj.addDiscreteISection(xc, yc, h, b, b, tf, tf, tw, nx, ny, material, varargin{:});
+            obj.addDiscreteISection(xc, yc, b, b, h, tf, tf, tw, nx, ny, material, varargin{:});
             
         end % addDiscreteHSection function
         
-        function addDiscreteChannel(obj, xc, yc, h, b, tf, tw, nx, ny, material, varargin)
+        function addDiscreteChannel(obj, xc, yc, b, h, tf, tw, nx, ny, material, varargin)
             % addDiscreteChannel: Agrega una seccion canal discreta
             %
             % Parametros requeridos:
             %   xc          Centro de gravedad en x
             %   yc          Centro de gravedad en y
-            %   h           Altura del canal
             %   b           Ancho del canal
+            %   h           Altura del canal
             %   tf          Ancho del ala
             %   tw          Ancho del alma
             %   nx          Discretizacion en x
@@ -327,7 +346,7 @@ classdef SectionDesigner < BaseModel
             
             if nargin < 10
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'addDiscreteChannel(obj,xc,yc,h,b,tf,tw,nx,ny,material,varargin)');
+                    'addDiscreteChannel(obj,xc,yc,b,h,tf,tw,nx,ny,material,varargin)');
             end
             
             % Calcula discretizacion del ala
@@ -339,6 +358,50 @@ classdef SectionDesigner < BaseModel
             obj.addDiscreteRect(xc-b/2+tw/2, yc, tw, h-2*tf, nwx, nwy, material, varargin{:});
             obj.addDiscreteRect(xc, yc-h/2+tf/2, b, tf, nx, nfy, material, varargin{:});
             obj.addDiscreteRect(xc, yc+h/2-tf/2, b, tf, nx, nfy, material, varargin{:});
+            
+        end % addDiscreteChannel function
+        
+        function addDiscreteBoxChannel(obj, xc, yc, b, h, t, nx, ny, material, varargin)
+            % addDiscreteBoxChannel: Agrega una seccion canal rectangular
+            % discreta
+            %
+            % Parametros requeridos:
+            %   xc          Centro de gravedad en x
+            %   yc          Centro de gravedad en y
+            %   b           Ancho del canal
+            %   h           Altura del canal
+            %   tf          Ancho del ala
+            %   tw          Ancho del alma
+            %   nx          Discretizacion en x
+            %   ny          Discretizacion en y
+            %   material    Materialidad de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   linewidth       Ancho de linea de la seccion
+            %   rotation        Angulo de rotacion en grados
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 9
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteBoxChannel(xc,yc,b,h,t,nx,ny,material,varargin)');
+            end
+            
+            % Calcula discretizacion del ala
+            nty = max(1, ceil(ny/h*t));
+            ntx = max(1, ceil(nx/b*t));
+            nte = max(nty, ntx); % Espesor
+            
+            ntex = min(nx, nte);
+            ntey = min(ny, nte);
+            
+            % Agrega elementos
+            obj.addDiscreteRect(xc-b/2+t/2, yc, t, h-2*t, ntex, ny-2*nte, material, varargin{:});
+            obj.addDiscreteRect(xc+b/2-t/2, yc, t, h-2*t, ntex, ny-2*nte, material, varargin{:});
+            obj.addDiscreteRect(xc, yc+h/2-t/2, b, t, nx, ntey, material, varargin{:});
+            obj.addDiscreteRect(xc, yc-h/2+t/2, b, t, nx, ntey, material, varargin{:});
             
         end % addDiscreteChannel function
         
@@ -453,11 +516,11 @@ classdef SectionDesigner < BaseModel
                     px = g{1};
                     py = g{2};
                     tn = g{5};
-                    patchx = g{17};
-                    patchy = g{18};
+                    patchx = g{20};
+                    patchy = g{21};
                     patchz = g{19};
                     for j = 1:tn
-                        patch(patchx, patchy, patchz, ...
+                        patch(patchx{j}, patchy{j}, patchz, ...
                             'FaceColor', obj.contParams{i}.color, ...
                             'EdgeColor', obj.contParams{i}.color, ...
                             'LineWidth', obj.contParams{i}.linewidth*0.5, ...
@@ -580,9 +643,9 @@ classdef SectionDesigner < BaseModel
             mx = obj.calcMx(e0, phix, phiy);
             my = obj.calcMy(e0, phix, phiy);
             fprintf('\tCargas:\n');
-            fprintf('\t\tP axial: %.2f %s\n', p * r.pfactor, r.punits);
-            fprintf('\t\tMx: %.2f %s\n', mx * r.mfactor, r.munits);
-            fprintf('\t\tMy: %.2f %s\n', my * r.mfactor, r.munits);
+            fprintf('\t\tP axial: %.2f %s\n', p*r.pfactor, r.punits);
+            fprintf('\t\tMx: %.2f %s\n', mx*r.mfactor, r.munits);
+            fprintf('\t\tMy: %.2f %s\n', my*r.mfactor, r.munits);
             
             % Genera el titulo
             plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
@@ -774,7 +837,7 @@ classdef SectionDesigner < BaseModel
             
         end % getCentroid function
         
-        function area = getArea(obj)
+        function [area, areacont, areasing] = getArea(obj)
             % getArea: Calcula el area total
             
             area = 0; % Area total
@@ -782,10 +845,12 @@ classdef SectionDesigner < BaseModel
                 g = obj.contGeom{i};
                 area = area + g{8};
             end
+            areacont = area;
             for i = 1:obj.singTotal
                 g = obj.singGeom{i};
                 area = area + g{3};
             end
+            areasing = area - areacont;
             
         end % getArea function
         
@@ -1080,15 +1145,16 @@ classdef SectionDesigner < BaseModel
             [gx, gy] = obj.getCenter();
             [xmin, xmax, ymin, ymax] = obj.getLimits();
             [sx, sy] = obj.getSize();
+            [a, ac, as] = obj.getArea();
             
-            fprintf('\tCentroide: %.2f, %.2f\n', cx, cy);
-            fprintf('\tCentro geometrico: %.2f, %.2f\n', gx, gy);
-            fprintf('\tArea: %.2f\n', obj.getArea());
+            fprintf('\tCentroide: (%.2f,%.2f)\n', cx, cy);
+            fprintf('\tCentro geometrico: (%.2f,%.2f)\n', gx, gy);
+            fprintf('\tArea: %.2f\n\t\tContinuos: %.2f\n\t\tSingulares: %.2f\n', a, ac, as);
             fprintf('\tAncho: %.2f\n', sx);
             fprintf('\tAlto: %.2f\n', sy);
-            fprintf('\tNumero de elementos: %d\n\t\tContinuos: %d\n\t\tFinitos: %d\n', ...
+            fprintf('\tNumero de elementos: %d\n\t\tContinuos: %d\n\t\tSingulares: %d\n', ...
                 obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
-            fprintf('\tLimites de la seccion:\n\t\tx: (%.2f, %.2f)\n\t\ty: (%.2f, %.2f)\n', ...
+            fprintf('\tLimites de la seccion:\n\t\tx: (%.2f,%.2f)\n\t\ty: (%.2f,%.2f)\n', ...
                 xmin, xmax, ymin, ymax);
             
             dispMCURV();

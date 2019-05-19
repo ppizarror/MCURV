@@ -23,8 +23,12 @@ hbeam.plot('showdisc', true);
 
 % Ejecuta un analisis
 analysis = SectionAnalysis('Analisis', 100, 0.01);
-p = linspace(0, 0, 500*1000)'; % N
+p = linspace(0, 0, 500)'; % N
 phix = linspace(0, 1.6e-3, 500)';
 phiy = linspace(0, 0, 500)';
 analysis.calc_e0M(hbeam, p, phix, phiy);
-analysis.plot_e0M('plot', 'mphix', 'factor', 1e-6); % N*mm -> kN*m
+
+% N*mm -> kN*m
+analysis.plot_e0M('plot', 'mphix', 'factor', 1e-6, 'm', 'x', ...
+    'sapfile', 'test/section/mcurv-sap2000/hBeam.txt', 'sapfactorPhi', 1e-3, ...
+    'sapcolumnPhi', 10, 'sapcolumnM', 11);

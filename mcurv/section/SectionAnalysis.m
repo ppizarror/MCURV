@@ -74,6 +74,10 @@ classdef SectionAnalysis < BaseModel
                 error('Objeto seccion debe heredar de SectionDesigner');
             end
             
+            if length(p) ~= length(phix) || length(p) ~= length(phiy)
+                error('Los vectores p, phix, phiy deben tener igual largo');
+            end
+            
             fprintf('Calculando e0 y M dado arreglo de P y phix,phiy:\n');
             fprintf('\tSeccion: %s\n', section.getName());
             
@@ -87,7 +91,7 @@ classdef SectionAnalysis < BaseModel
             
             pcentroid = '';
             if ppos(1) == px && ppos(2) == py
-                pcentroid = ' Ubicado en centroide';
+                pcentroid = ' ubicado en centroide';
             end
             
             fprintf('\tCarga externa posicion: (%.2f,%.2f)%s\n', ...
@@ -258,22 +262,36 @@ classdef SectionAnalysis < BaseModel
             %
             % Parametros opcionales:
             %   factor          Factor de escala para el momento
+            %   legend          Ubicacion de la leyenda
+            %   limPos          Limita analisis a valores positivos
+            %   m               Que eje usar, 'x', 'y'
             %   medfilt         Aplica medfilt
             %   medfiltN        Numero de filtro
-            %   limPos          Limita analisis a valores positivos
             %   plot            Tipo de grafico
+            %   sapcolumnM      Columna de momento del archivo
+            %   sapcolumnPhi    Columna de curvatura del archivo
+            %   sapfactorM      Factor multiplicacion archivo
+            %   sapfactorPhi    Factor multiplicacion archivo
+            %   sapfile         Carga un archivo de resultados (phi-M)
+            %   saplegend       Leyenda del archivo
             %   unitlength      Unidad de longitud
-            %   legend          Ubicacion de la leyenda
             %   unitload        Unidad de carga
             
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('factor', 1); % Si se usan N*mm a tonf-m
+            p.addOptional('legend', 'southeast');
             p.addOptional('limPos', true)
+            p.addOptional('m', 'all'); % Cual eje usar
             p.addOptional('medfilt', true); % Aplica medfilt
             p.addOptional('medfiltN', 3);
             p.addOptional('plot', 'all');
-            p.addOptional('legend', 'southeast');
+            p.addOptional('sapcolumnM', 2);
+            p.addOptional('sapcolumnPhi', 1);
+            p.addOptional('sapfactorM', 1);
+            p.addOptional('sapfactorPhi', 1);
+            p.addOptional('sapfile', ''); % Archivo de sap
+            p.addOptional('saplegend', 'SAP2000');
             p.addOptional('unitlength', '1/mm'); % Unidad de largo
             p.addOptional('unitload', 'kN*m'); % Unidad de carga
             parse(p, varargin{:});
@@ -302,15 +320,39 @@ classdef SectionAnalysis < BaseModel
                 plt = figure();
                 movegui(plt, 'center');
                 set(gcf, 'name', 'Momento curvatura');
-                plot(phiy, mxInt, '-', 'LineWidth', 1.5);
                 hold on;
-                plot(phiy, myInt, '-', 'LineWidth', 1.5);
+                if strcmp(r.m, 'all')
+                    plot(phiy, mxInt, '-', 'LineWidth', 1.5);
+                    plot(phiy, myInt, '-', 'LineWidth', 1.5);
+                    leg = {'M_x', 'M_y'};
+                elseif strcmp(r.m, 'x')
+                    plot(phiy, mxInt, '-', 'LineWidth', 1.5);
+                    leg = {'M_x'};
+                elseif strcmp(r.m, 'y')
+                    plot(phiy, myInt, '-', 'LineWidth', 1.5);
+                    leg = {'M_y'};
+                else
+                    error('Valor incorrecto parametro m: all,x,y');
+                end
+                
+                % Carga sap
+                if ~strcmp(r.sapfile, '')
+                    sapF = load(r.sapfile);
+                    sapPhi = sapF(:, r.sapcolumnPhi) .* r.sapfactorPhi;
+                    sapM = sapF(:, r.sapcolumnM) .* r.sapfactorM;
+                    sapMint = interp1(sapPhi, sapM, phiy, 'linear', 'extrap');
+                    plot(phiy, sapMint, '-', 'LineWidth', 1.5);
+                    if ~strcmp(r.saplegend, '')
+                        leg{length(leg)+1} = r.saplegend;
+                    end
+                end
+                
                 grid on;
                 grid minor;
                 xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitlength));
                 ylabel(sprintf('Momento M (%s)', r.unitload));
                 title(sprintf('Momento curvatura M/\\phi_y - %s', secName));
-                legend({'M_x', 'M_y'}, 'location', r.legend);
+                legend(leg, 'location', r.legend);
                 if r.limPos
                     ylim([0, max(get(gca, 'ylim'))]);
                 end
@@ -320,15 +362,39 @@ classdef SectionAnalysis < BaseModel
                 plt = figure();
                 movegui(plt, 'center');
                 set(gcf, 'name', 'Momento curvatura');
-                plot(phix, mxInt, '-', 'LineWidth', 1.5);
                 hold on;
-                plot(phix, myInt, '-', 'LineWidth', 1.5);
+                if strcmp(r.m, 'all')
+                    plot(phix, mxInt, '-', 'LineWidth', 1.5);
+                    plot(phix, myInt, '-', 'LineWidth', 1.5);
+                    leg = {'M_x', 'M_y'};
+                elseif strcmp(r.m, 'x')
+                    plot(phix, mxInt, '-', 'LineWidth', 1.5);
+                    leg = {'M_x'};
+                elseif strcmp(r.m, 'y')
+                    plot(phix, myInt, '-', 'LineWidth', 1.5);
+                    leg = {'M_y'};
+                else
+                    error('Valor incorrecto parametro m: all,x,y');
+                end
+                
+                % Carga sap
+                if ~strcmp(r.sapfile, '')
+                    sapF = load(r.sapfile);
+                    sapPhi = sapF(:, r.sapcolumnPhi) .* r.sapfactorPhi;
+                    sapM = sapF(:, r.sapcolumnM) .* r.sapfactorM;
+                    sapMint = interp1(sapPhi, sapM, phix, 'linear', 'extrap');
+                    plot(phix, sapMint, '-', 'LineWidth', 1.5);
+                    if ~strcmp(r.saplegend, '')
+                        leg{length(leg)+1} = r.saplegend;
+                    end
+                end
+                
                 grid on;
                 grid minor;
                 xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitlength));
                 ylabel(sprintf('Momento M (%s)', r.unitload));
                 title(sprintf('Momento curvatura M/\\phi_x - %s', secName));
-                legend({'M_x', 'M_y'}, 'location', r.legend);
+                legend(leg, 'location', r.legend);
                 if r.limPos
                     ylim([0, max(get(gca, 'ylim'))]);
                 end

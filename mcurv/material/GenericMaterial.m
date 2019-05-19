@@ -112,8 +112,10 @@ classdef GenericMaterial < BaseModel
             % Grafica
             plot(ex, fx, 'LineWidth', r.lineWidth, 'Color', r.lineColor);
             lims = get(gca, 'ylim') .* (1 + r.limMargin);
+            ylim(lims); % Aplica limites
+            xlim = get(gca, 'xlim');
             hold on;
-            plot([min(ex), max(ex)], [0, 0], r.gridStyle, ...
+            plot(xlim, [0, 0], r.gridStyle, ...
                 'Color', r.gridColor, 'LineWidth', r.gridLineWidth);
             plot([0, 0], lims, r.gridStyle, ...
                 'Color', r.gridColor, 'LineWidth', r.gridLineWidth);
@@ -121,9 +123,6 @@ classdef GenericMaterial < BaseModel
             
             grid on;
             grid minor;
-            
-            % Aplica limites
-            ylim(lims);
             
             title(plotTitle);
             xlabel('Deformacion (-)');
@@ -142,23 +141,50 @@ classdef GenericMaterial < BaseModel
             % Parametros opcionales:
             %   emax            Deformacion mayor
             %   emin            Deformacion menor
+            %   file            Archivo en que se guarda la informacion
             %   npoints         Numero de puntos
             
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('emax', 1);
             p.addOptional('emin', -1);
+            p.addOptional('file', '');
             p.addOptional('npoints', 1000);
             parse(p, varargin{:});
             r = p.Results;
             
             t = zeros(r.npoints, 2);
+            j = 1; % Contador sobre t
             e = linspace(r.emin, r.emax, r.npoints);
             [f, ~] = obj.eval(e);
             
             for i = 1:r.npoints
-                t(i, 1) = e(i);
-                t(i, 2) = f(i);
+                
+                % Si se pasa por cero
+                if i > 1 && f(i) > 0 && f(i-1) < 0 && f(i) ~= 0
+                    t(j, 1) = 0;
+                    t(j, 2) = 0;
+                    j = j + 1;
+                end
+                
+                % Guarda el punto
+                t(j, 1) = e(i);
+                t(j, 2) = f(i);
+                j = j + 1;
+                
+            end
+            
+            % Si se pasa un archivo
+            if ~strcmp(r.file, '')
+                fileO = fopen(r.file, 'w');
+                for i = 1:r.npoints
+                    if i < r.npoints
+                        fprintf(fileO, '%f\t%f\n', t(i, 1), t(i, 2));
+                    else
+                        fprintf(fileO, '%f\t%f', t(i, 1), t(i, 2));
+                    end
+                end
+                fclose(fileO);
             end
             
         end % getStressDeformation function
