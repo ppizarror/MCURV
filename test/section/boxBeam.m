@@ -15,7 +15,7 @@ t = [25, 25, 25]';
 
 % Agrega los elementos a la seccion
 boxbeam.addDiscreteBoxChannel(0, 0, bf(model), d(model), t(model), 1, 10, steel);
-boxbeam.addDiscreteRect(0, 0, bf(model)-2*t(model), d(model)-2*t(model), 20, 20, concrete);
+boxbeam.addDiscreteRect(0, 0, bf(model)-2*t(model), d(model)-2*t(model), 1, 20, concrete);
 boxbeam.disp();
 
 % Grafica

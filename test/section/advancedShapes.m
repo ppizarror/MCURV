@@ -5,6 +5,7 @@ steel = ElastoplasticSteel('AceroA36', 294.31, 200894.198, 1120.531847, 0.246197
 ashapes.addDiscreteISection(100, 100, 300, 200, 100, 20, 20, 6, 20, 50, steel, 'rotation', 30);
 ashapes.addDiscreteHSection(300, 300, 300, 200, 20, 6, 20, 50, steel);
 ashapes.addDiscreteChannel(300, 100, 100, 20, 5, 5, 10, 10, steel, 'rotation', 45);
+ashapes.addDiscreteSquareChannel(350, 100, 50, 5, 10, steel);
 
 % Grafica
 ashapes.plot('showdisc', true);
@@ -17,4 +18,4 @@ phiy = linspace(0, 0, 100)';
 e0 = analysis.calc_e0M(ashapes, p, phix, phiy);
 
 % Grafica resultados
-analysis.plot_e0M('plot', 'mphix', 'factor', 1.019716e-7, 'm', 'x')
+analysis.plot_e0M('plot', 'mphix', 'factor', 1e-6, 'm', 'x'); % N*mm -> kN*m
