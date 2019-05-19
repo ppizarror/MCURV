@@ -65,6 +65,7 @@ classdef SectionAnalysis < BaseModel
             %   ppos            Posicion de la carga, si no se define se
             %                   deja en el centroide de la seccion
             
+            tIni = cputime();
             if nargin < 5
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'calc_e0M(section,p,phix,phiy,ppos)');
@@ -78,12 +79,13 @@ classdef SectionAnalysis < BaseModel
                 error('Los vectores p, phix, phiy deben tener igual largo');
             end
             
-            % Verifica que la curvatura no sea negativa
-            % for i = 1:length(p)
-            %     if phix(i) < 0 || phiy(i) < 0
-            %         error('La curvatura no puede ser negativa');
-            %     end
-            % end
+            % Verifica que los vectores sean crecientes
+            for i=2:length(p)
+                if abs(p(i)) < abs(p(i-1)) || abs(phix(i)) < abs(phix(i-1)) || ...
+                        abs(phiy(i)) < abs(phiy(i-1))
+                    error('Los vectores p, phix, phiy deben ser crecientes en modulo');
+                end
+            end
             
             fprintf('Calculando e0 y M dado arreglo de P y phix,phiy:\n');
             fprintf('\tSeccion: %s\n', section.getName());
@@ -116,10 +118,8 @@ classdef SectionAnalysis < BaseModel
             deltaE0Iter = zeros(n, obj.maxiter);
             pE0 = zeros(n, obj.maxiter);
             jacIter = zeros(n, obj.maxiter); % Jacobiano (rigidez)
-            
             defTotal = zeros(n, 1); % Deformacion total para cada [P,phi]_i
-            err = zeros(n, obj.maxiter); % Error de cada iteracion
-            
+            err = zeros(n, obj.maxiter); % Error de cada iteracion       
             iters = zeros(n, 1); % Numero de iteraciones necesitados
             
             % Cargas internas guardadas
@@ -141,10 +141,10 @@ classdef SectionAnalysis < BaseModel
                 % Iteracion con variacion del jacobiano
                 if ~usar1JAC
                     
-                    % Calcula el primer delta_eo, considera deformacion total como la suma
-                    % de los delta_e0 de cada iteracion
+                    % Calcula el primer delta_eo, considera deformacion total
+                    % como la suma de los delta_e0 de cada iteracion
                     jac = section.calcJac(defTotal(i), phix(i), phiy(i));
-                    jac = jac(1, 1); % Solo escata aP/ae0
+                    jac = jac(1, 1); % Solo rescata aP/ae0
                     jac = jac^-1;
                     jacIter(i, 1) = jac(1, 1);
                     deltaE0Iter(i, 1) = jacIter(i, 1) * delta_p(i);
@@ -172,7 +172,7 @@ classdef SectionAnalysis < BaseModel
                         
                         % Si es mayor a la tolerancia
                         jac = section.calcJac(sum(deltaE0Iter(i, :)), phix(i), phiy(i));
-                        jac = jac(1, 1); % Solo escata aP/ae0
+                        jac = jac(1, 1); % Solo rescata aP/ae0
                         jac = jac^-1;
                         jacIter(i, j+1) = jac(1, 1);
                         deltaE0Iter(i, j+1) = jacIter(i, j+1) * err(i, j);
@@ -208,7 +208,7 @@ classdef SectionAnalysis < BaseModel
                             defTotal(i) = sum(deltaE0Iter(i, :));
                         end
                         
-                        % Calcula la fuerza interna [N]
+                        % Calcula la fuerza interna
                         pE0(i, j) = section.calcP(defTotal(i), phix(i), phiy(i));
                         
                         % Calcula el error entre carga aproximada y exacta
@@ -254,13 +254,15 @@ classdef SectionAnalysis < BaseModel
                 
             end
             
+            % Guarda la solucion
+            obj.lastsole0p = {mxInt, myInt, phix, phiy, pInt, p, pE0, section.getName(), iters};
+            
             % Imprime resultados
             fprintf('\n');
             fprintf('\tIteraciones totales: %d\n', sum(iters));
             fprintf('\tUsado primera matriz rigidez desde i: %d\n', usar1JACNITER);
-            
-            % Guarda la solucion
-            obj.lastsole0p = {mxInt, myInt, phix, phiy, pInt, p, pE0, section.getName(), iters};
+            fprintf('\tProceso finalizado en %.2f segundos\n', cputime-tIni);
+            dispMCURV();
             
         end % calc_e0M function
         
@@ -421,6 +423,7 @@ classdef SectionAnalysis < BaseModel
             if r.limPos
                 ylim([0, max(get(gca, 'ylim'))]);
             end
+            xlim([min(phi), max(phi)]);
             
             % Genera la diferencia
             if ~strcmp(r.sapfile, '') && r.sapdiff && ...
@@ -448,6 +451,7 @@ classdef SectionAnalysis < BaseModel
                 xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
                 ylabel(sprintf('Diferencia momento M (%s)', r.unitload));
                 title('Diferencia momento absoluta');
+                xlim([min(phi), max(phi)]);
                 
                 % Diferencia relativa
                 plt = figure();
@@ -462,6 +466,7 @@ classdef SectionAnalysis < BaseModel
                 xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
                 ylabel('Diferencia momento (%)');
                 title('Diferencia momento relativa');
+                xlim([min(phi), max(phi)]);
                 
             end
             
@@ -482,6 +487,7 @@ classdef SectionAnalysis < BaseModel
             if r.limPos
                 ylim([0, max(get(gca, 'ylim'))]);
             end
+            xlim([min(phi), max(phi)]);
             
         end % plot_e0M_pcurv function
         
