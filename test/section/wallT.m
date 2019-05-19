@@ -23,7 +23,7 @@ steel.getStressDeformation('emin', -2.5e-1, 'emax', 3.1e-1, ...
     'file', 'test/section/mat/steel.txt');
 
 % Agrega los elementos
-caseNum = '4.2';
+caseNum = '1';
 h = 5000;
 b = 4000;
 bw = 300;

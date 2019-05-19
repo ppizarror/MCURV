@@ -1,5 +1,5 @@
 % Viga simple
-simplebeam = SectionDesigner('Viga plana');
+simplebeam = SectionDesigner('Viga simple');
 
 % Genera los materiales
 steel = ElastoplasticSteel('Acero', 420, 200000, 2000, 0.2);
@@ -7,7 +7,7 @@ steel.setColor([0, 0, 0.5]);
 concrete = HognestadConcrete('Hormigon', 25, 0.0025);
 
 % Agrega los elementos a la seccion
-simplebeam.addDiscreteRect(0, 0, 350, 700, 1, 50, concrete, 'rotation', 0);
+simplebeam.addDiscreteRect(0, 0, 350, 700, 25, 25, concrete, 'rotation', 0);
 simplebeam.addFiniteArea(-130, -350+55, 1050, steel);
 simplebeam.addFiniteArea(-130, 350-55, 1050, steel);
 simplebeam.addFiniteArea(130, -350+55, 1050, steel);
