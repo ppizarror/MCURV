@@ -8,7 +8,7 @@
 %|                         Universidad de Chile                         |
 %|______________________________________________________________________|
 
-MCURV_ver = 'v0.10';
+MCURV_ver = 'v1.0';
 
 % Agrega las carpetas de la plataforma MCURV al PATH
 addpath('mcurv');
