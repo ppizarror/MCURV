@@ -78,6 +78,13 @@ classdef SectionAnalysis < BaseModel
                 error('Los vectores p, phix, phiy deben tener igual largo');
             end
             
+            % Verifica que la curvatura no sea negativa
+            for i = 1:length(p)
+                if phix(i) < 0 || phiy(i) < 0
+                    error('La curvatura no puede ser negativa');
+                end
+            end
+            
             fprintf('Calculando e0 y M dado arreglo de P y phix,phiy:\n');
             fprintf('\tSeccion: %s\n', section.getName());
             
@@ -253,9 +260,30 @@ classdef SectionAnalysis < BaseModel
             fprintf('\tUsado primera matriz rigidez desde i: %d\n', usar1JACNITER);
             
             % Guarda la solucion
-            obj.lastsole0p = {mxInt, myInt, phix, phiy, pInt, p, pE0, section.getName()};
+            obj.lastsole0p = {mxInt, myInt, phix, phiy, pInt, p, pE0, section.getName(), iters};
             
         end % calc_e0M function
+        
+        function plot_lastIter(obj)
+            % plot_lastIter: Grafica el resultado de la ultima iteracion
+            
+            if isempty(obj.lastsole0p)
+                error('Analisis e0M no ha sido ejecutado');
+            end
+            plt = figure();
+            movegui(plt, 'center');
+            set(gcf, 'name', 'Momento curvatura');
+            hold on;
+            niter = obj.lastsole0p{9};
+            
+            plot(1:length(niter), niter, 'k-', 'Linewidth', 1.5);
+            grid on;
+            grid minor;
+            
+            xlabel('Numero de paso');
+            ylabel('Numero de iteraciones');
+            
+        end % plot_lastIter function
         
         function plot_e0M(obj, varargin)
             % plot_e0M: Grafica el ultimo analisis de e0M
@@ -264,15 +292,16 @@ classdef SectionAnalysis < BaseModel
             %   factor          Factor de escala para el momento
             %   legend          Ubicacion de la leyenda
             %   limPos          Limita analisis a valores positivos
-            %   m               Que eje usar, 'x', 'y'
+            %   m               Que eje usar, 'all', 'x', 'y'
             %   medfilt         Aplica medfilt
             %   medfiltN        Numero de filtro
             %   plot            Tipo de grafico
             %   sapcolumnM      Columna de momento del archivo
             %   sapcolumnPhi    Columna de curvatura del archivo
+            %   sapdiff         Grafica la diferencia, solo para m:x/y
             %   sapfactorM      Factor multiplicacion archivo
             %   sapfactorPhi    Factor multiplicacion archivo
-            %   sapfile         Carga un archivo de resultados (phi-M)
+            %   sapfile         Carga un archivo, solo para m:x/y
             %   saplegend       Leyenda del archivo
             %   unitlength      Unidad de longitud
             %   unitload        Unidad de carga
@@ -288,6 +317,7 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('plot', 'all');
             p.addOptional('sapcolumnM', 2);
             p.addOptional('sapcolumnPhi', 1);
+            p.addOptional('sapdiff', false);
             p.addOptional('sapfactorM', 1);
             p.addOptional('sapfactorPhi', 1);
             p.addOptional('sapfile', ''); % Archivo de sap
@@ -356,6 +386,24 @@ classdef SectionAnalysis < BaseModel
                 if r.limPos
                     ylim([0, max(get(gca, 'ylim'))]);
                 end
+                
+                if ~strcmp(r.sapfile, '') && r.sapdiff && ...
+                        (strcmp(r.m, 'x') || strcmp(r.m, 'y'))
+                    plt = figure();
+                    movegui(plt, 'center');
+                    set(gcf, 'name', 'Diferencia entre archivo y calculo');
+                    hold on;
+                    grid on;
+                    grid minor;
+                    if strcmp(r.plot', 'x')
+                        plot(phiy, sapMint-mxInt, 'k-', 'LineWidth', 1.5);
+                    else
+                        plot(phiy, sapMint-myInt, 'k-', 'LineWidth', 1.5);
+                    end
+                    xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitlength));
+                    ylabel(sprintf('Diferencia momento M (%s)', r.unitload));
+                end
+                
             end
             
             if strcmp(r.plot, 'all') || strcmp(r.plot, 'mphix')
@@ -398,6 +446,24 @@ classdef SectionAnalysis < BaseModel
                 if r.limPos
                     ylim([0, max(get(gca, 'ylim'))]);
                 end
+                
+                if ~strcmp(r.sapfile, '') && r.sapdiff && ...
+                        (strcmp(r.m, 'x') || strcmp(r.m, 'y'))
+                    plt = figure();
+                    movegui(plt, 'center');
+                    set(gcf, 'name', 'Diferencia entre archivo y calculo');
+                    hold on;
+                    grid on;
+                    grid minor;
+                    if strcmp(r.plot', 'x')
+                        plot(phix, sapMint-mxInt, 'k-', 'LineWidth', 1.5);
+                    else
+                        plot(phix, sapMint-myInt, 'k-', 'LineWidth', 1.5);
+                    end
+                    xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitlength));
+                    ylabel(sprintf('Diferencia momento M (%s)', r.unitload));
+                end
+                
             end
             
             if strcmp(r.plot, 'all') || strcmp(r.plot, 'pphix')

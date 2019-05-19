@@ -24,4 +24,3 @@ dev/
 test/*out*
 test/**/*.gif
 test/**/sap2000/*
-test/**/*.txt

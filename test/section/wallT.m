@@ -5,22 +5,22 @@
 wallt = SectionDesigner();
 
 % Genera los materiales
-hormigonA = HognestadModifiedConcrete('Hognestad-A', 30, 0.002, 0.004);
-hormigonB = HognestadModifiedConcrete('Hognestad-B', 40, 0.007, 0.02);
-acero = ManderSteel('Acero', 420, 200000, 600, 200000/20, 0.01, 0.1, 0.3);
-acero.setColor([0.8, 0, 0]);
+concreteA = HognestadModifiedConcrete('Hognestad-A', 30, 0.002, 0.004);
+concreteB = HognestadModifiedConcrete('Hognestad-B', 40, 0.007, 0.02);
+steel = ManderSteel('Acero', 420, 200000, 600, 200000/20, 0.01, 0.1, 0.3);
+steel.setColor([1, 0, 0]);
 
-hormigonA.disp();
-hormigonA.getStressDeformation('emin', -2e-3, 'emax', 5e-3, ...
-    'file', 'test/section/mat/hormigonA.txt');
+concreteA.disp();
+concreteA.getStressDeformation('emin', -2e-3, 'emax', 5e-3, ...
+    'file', 'test/section/mat/concreteA.txt');
 
-hormigonB.disp();
-hormigonB.getStressDeformation('emin', -5e-4, 'emax', 2.1e-2, ...
-    'file', 'test/section/mat/hormigonB.txt');
+concreteB.disp();
+concreteB.getStressDeformation('emin', -5e-4, 'emax', 2.1e-2, ...
+    'file', 'test/section/mat/concreteB.txt');
 
-acero.disp();
-acero.getStressDeformation('emin', -2.5e-1, 'emax', 3.1e-1, ...
-    'file', 'test/section/mat/acero.txt');
+steel.disp();
+steel.getStressDeformation('emin', -2.5e-1, 'emax', 3.1e-1, ...
+    'file', 'test/section/mat/steel.txt');
 
 % Agrega los elementos
 caso = '1';
@@ -35,57 +35,57 @@ incrementos = 500;
 if strcmp(caso, '1')
     As = 4000;
     Asp = 4000;
-    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, hormigonA);
-    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, hormigonA);
-    wallt.addFiniteArea(-h/2+d, -b/2+d, As, acero);
-    wallt.addFiniteArea(-h/2+d, b/2-d, As, acero);
-    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 15, 1, concreteA);
+    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 100, 1, concreteA);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
+    wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = linspace(0, 0, incrementos)';
     phix = linspace(0, 0, incrementos)';
-    phiy = linspace(0, 4e-5, incrementos)';
+    phiy = linspace(0, 1.2e-5, incrementos)';
 elseif strcmp(caso, '2')
     As = 8000;
     Asp = 8000;
-    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, hormigonA);
-    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, hormigonA);
-    wallt.addFiniteArea(-h/2+d, -b/2+d, As, acero);
-    wallt.addFiniteArea(-h/2+d, b/2-d, As, acero);
-    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, concreteA);
+    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, concreteA);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
+    wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = ones(incrementos, 1) .* 9000 * 1000; % N
     phix = linspace(0, 0, incrementos)';
     phiy = linspace(0, 4e-5, incrementos)';
 elseif strcmp(caso, '3')
     As = 8000;
     Asp = 8000;
-    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, hormigonB);
-    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, hormigonB);
-    wallt.addFiniteArea(-h/2+d, -b/2+d, As, acero);
-    wallt.addFiniteArea(-h/2+d, b/2-d, As, acero);
-    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, concreteB);
+    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, concreteB);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
+    wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = ones(incrementos, 1) .* 9000 * 1000; % N
     phix = linspace(0, 0, incrementos)';
     phiy = linspace(0, 4e-5, incrementos)';
 elseif strcmp(caso, '4.1')
     As = 8000;
     Asp = 8000;
-    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, hormigonB);
-    wallt.addDiscreteRect((bw - bw2)/2, 0, h-bw-bw2, bw, 80, 1, hormigonB);
-    wallt.addDiscreteRect((h - bw2)/2, 0, bw2, bw2, 10, 1, hormigonB);
-    wallt.addFiniteArea(-h/2+d, -b/2+d, As, acero);
-    wallt.addFiniteArea(-h/2+d, b/2-d, As, acero);
-    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, concreteB);
+    wallt.addDiscreteRect((bw - bw2)/2, 0, h-bw-bw2, bw, 80, 1, concreteB);
+    wallt.addDiscreteRect((h - bw2)/2, 0, bw2, bw2, 10, 1, concreteB);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
+    wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = ones(incrementos, 1) .* 9000 * 1000; % N
     phix = linspace(0, 0, incrementos)';
     phiy = linspace(0, 4e-5, incrementos)';
 elseif strcmp(caso, '4.2')
     As = 8000;
     Asp = 8000;
-    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 1, 80, hormigonB);
-    wallt.addDiscreteRect((bw - bw2)/2, 0, h-bw-bw2, bw, 1, 10, hormigonB);
-    wallt.addDiscreteRect((h - bw2)/2, 0, bw2, bw2, 1, 10, hormigonB);
-    wallt.addFiniteArea(-h/2+d, -b/2+d, As, acero);
-    wallt.addFiniteArea(-h/2+d, b/2-d, As, acero);
-    wallt.addFiniteArea(h/2-d, 0, Asp, acero);
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 1, 80, concreteB);
+    wallt.addDiscreteRect((bw - bw2)/2, 0, h-bw-bw2, bw, 1, 10, concreteB);
+    wallt.addDiscreteRect((h - bw2)/2, 0, bw2, bw2, 1, 10, concreteB);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
+    wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = ones(incrementos, 1) .* 9000 * 1000; % N
     phix = linspace(0, 4.5e-5, incrementos)';
     phiy = linspace(0, 0, incrementos)';
