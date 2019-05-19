@@ -403,7 +403,35 @@ classdef SectionDesigner < BaseModel
             obj.addDiscreteRect(xc, yc+h/2-t/2, b, t, nx, ntey, material, varargin{:});
             obj.addDiscreteRect(xc, yc-h/2+t/2, b, t, nx, ntey, material, varargin{:});
             
-        end % addDiscreteChannel function
+        end % addDiscreteBoxChannel function
+        
+        function addDiscreteSquareChannel(obj, xc, yc, L, t, n, material, varargin)
+            % addDiscreteSquareChannel: Agrega una seccion canal cuadrada
+            % discreta
+            %
+            % Parametros requeridos:
+            %   xc          Centro de gravedad en x
+            %   yc          Centro de gravedad en y
+            %   L           Largo de la caja
+            %   t           Espesor
+            %   n           Discretizacion en x/y
+            %   material    Materialidad de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   linewidth       Ancho de linea de la seccion
+            %   rotation        Angulo de rotacion en grados
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 7
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteSquareChannel(xc,yc,L,t,n,material,varargin)');
+            end
+            obj.addDiscreteBoxChannel(xc, yc, L, L, t, n, n, material, varargin{:});
+            
+        end % addDiscreteSquareChannel function
         
         function addFiniteArea(obj, xc, yc, area, material, varargin)
             % addFiniteArea: Agrega un area finita
