@@ -79,11 +79,11 @@ classdef SectionAnalysis < BaseModel
             end
             
             % Verifica que la curvatura no sea negativa
-            for i = 1:length(p)
-                if phix(i) < 0 || phiy(i) < 0
-                    error('La curvatura no puede ser negativa');
-                end
-            end
+            % for i = 1:length(p)
+            %     if phix(i) < 0 || phiy(i) < 0
+            %         error('La curvatura no puede ser negativa');
+            %     end
+            % end
             
             fprintf('Calculando e0 y M dado arreglo de P y phix,phiy:\n');
             fprintf('\tSeccion: %s\n', section.getName());
@@ -331,14 +331,15 @@ classdef SectionAnalysis < BaseModel
                 error('Analisis e0M no ha sido ejecutado');
             end
             
-            mxInt = obj.lastsole0p{1} .* r.factor;
-            myInt = obj.lastsole0p{2} .* r.factor;
+            mxInt = abs(obj.lastsole0p{1}.*r.factor);
+            myInt = abs(obj.lastsole0p{2}.*r.factor);
             pInt = obj.lastsole0p{5};
             % pRre = obj.lastsole0p{6};
-            phix = obj.lastsole0p{3};
-            phiy = obj.lastsole0p{4};
+            phix = abs(obj.lastsole0p{3});
+            phiy = abs(obj.lastsole0p{4});
             % e0 = obj.lastsole0p{7};
             secName = obj.lastsole0p{8};
+            % iters = obj.lastsole0p{9};
             
             % Aplica medfilt
             if r.medfilt
@@ -347,159 +348,22 @@ classdef SectionAnalysis < BaseModel
             end
             
             if strcmp(r.plot, 'all') || strcmp(r.plot, 'mphiy')
-                plt = figure();
-                movegui(plt, 'center');
-                set(gcf, 'name', 'Momento curvatura');
-                hold on;
-                if strcmp(r.m, 'all')
-                    plot(phiy, mxInt, '-', 'LineWidth', 1.5);
-                    plot(phiy, myInt, '-', 'LineWidth', 1.5);
-                    leg = {'M_x', 'M_y'};
-                elseif strcmp(r.m, 'x')
-                    plot(phiy, mxInt, '-', 'LineWidth', 1.5);
-                    leg = {'M_x'};
-                elseif strcmp(r.m, 'y')
-                    plot(phiy, myInt, '-', 'LineWidth', 1.5);
-                    leg = {'M_y'};
-                else
-                    error('Valor incorrecto parametro m: all,x,y');
-                end
-                
-                % Carga sap
-                if ~strcmp(r.sapfile, '')
-                    sapF = load(r.sapfile);
-                    sapPhi = sapF(:, r.sapcolumnPhi) .* r.sapfactorPhi;
-                    sapM = sapF(:, r.sapcolumnM) .* r.sapfactorM;
-                    sapMint = interp1(sapPhi, sapM, phiy, 'linear', 'extrap');
-                    plot(phiy, sapMint, '-', 'LineWidth', 1.5);
-                    if ~strcmp(r.saplegend, '')
-                        leg{length(leg)+1} = r.saplegend;
-                    end
-                end
-                
-                grid on;
-                grid minor;
-                xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitlength));
-                ylabel(sprintf('Momento M (%s)', r.unitload));
-                title(sprintf('Momento curvatura M/\\phi_y - %s', secName));
-                legend(leg, 'location', r.legend);
-                if r.limPos
-                    ylim([0, max(get(gca, 'ylim'))]);
-                end
-                
-                if ~strcmp(r.sapfile, '') && r.sapdiff && ...
-                        (strcmp(r.m, 'x') || strcmp(r.m, 'y'))
-                    plt = figure();
-                    movegui(plt, 'center');
-                    set(gcf, 'name', 'Diferencia entre archivo y calculo');
-                    hold on;
-                    grid on;
-                    grid minor;
-                    if strcmp(r.plot', 'x')
-                        plot(phiy, sapMint-mxInt, 'k-', 'LineWidth', 1.5);
-                    else
-                        plot(phiy, sapMint-myInt, 'k-', 'LineWidth', 1.5);
-                    end
-                    xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitlength));
-                    ylabel(sprintf('Diferencia momento M (%s)', r.unitload));
-                end
-                
-            end
-            
+                obj.plot_e0M_mcurv(phiy, mxInt, myInt, r, 'y', secName);
+            end    
             if strcmp(r.plot, 'all') || strcmp(r.plot, 'mphix')
-                plt = figure();
-                movegui(plt, 'center');
-                set(gcf, 'name', 'Momento curvatura');
-                hold on;
-                if strcmp(r.m, 'all')
-                    plot(phix, mxInt, '-', 'LineWidth', 1.5);
-                    plot(phix, myInt, '-', 'LineWidth', 1.5);
-                    leg = {'M_x', 'M_y'};
-                elseif strcmp(r.m, 'x')
-                    plot(phix, mxInt, '-', 'LineWidth', 1.5);
-                    leg = {'M_x'};
-                elseif strcmp(r.m, 'y')
-                    plot(phix, myInt, '-', 'LineWidth', 1.5);
-                    leg = {'M_y'};
-                else
-                    error('Valor incorrecto parametro m: all,x,y');
-                end
-                
-                % Carga sap
-                if ~strcmp(r.sapfile, '')
-                    sapF = load(r.sapfile);
-                    sapPhi = sapF(:, r.sapcolumnPhi) .* r.sapfactorPhi;
-                    sapM = sapF(:, r.sapcolumnM) .* r.sapfactorM;
-                    sapMint = interp1(sapPhi, sapM, phix, 'linear', 'extrap');
-                    plot(phix, sapMint, '-', 'LineWidth', 1.5);
-                    if ~strcmp(r.saplegend, '')
-                        leg{length(leg)+1} = r.saplegend;
-                    end
-                end
-                
-                grid on;
-                grid minor;
-                xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitlength));
-                ylabel(sprintf('Momento M (%s)', r.unitload));
-                title(sprintf('Momento curvatura M/\\phi_x - %s', secName));
-                legend(leg, 'location', r.legend);
-                if r.limPos
-                    ylim([0, max(get(gca, 'ylim'))]);
-                end
-                
-                if ~strcmp(r.sapfile, '') && r.sapdiff && ...
-                        (strcmp(r.m, 'x') || strcmp(r.m, 'y'))
-                    plt = figure();
-                    movegui(plt, 'center');
-                    set(gcf, 'name', 'Diferencia entre archivo y calculo');
-                    hold on;
-                    grid on;
-                    grid minor;
-                    if strcmp(r.plot', 'x')
-                        plot(phix, sapMint-mxInt, 'k-', 'LineWidth', 1.5);
-                    else
-                        plot(phix, sapMint-myInt, 'k-', 'LineWidth', 1.5);
-                    end
-                    xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitlength));
-                    ylabel(sprintf('Diferencia momento M (%s)', r.unitload));
-                end
-                
+                obj.plot_e0M_mcurv(phix, mxInt, myInt, r, 'x', secName);
             end
-            
             if strcmp(r.plot, 'all') || strcmp(r.plot, 'pphix')
-                plt = figure();
-                movegui(plt, 'center');
-                set(gcf, 'name', 'P vs \phi_x');
-                plot(phix, pInt, '-', 'LineWidth', 1.5);
-                grid on;
-                grid minor;
-                xlabel(sprintf('Curvatura \\phi_x (%s)', r.unitload));
-                ylabel('Carga axial P');
-                title(sprintf('Carga axial vs curvatura \\phi_x - %s', secName));
-                if r.limPos
-                    ylim([0, max(get(gca, 'ylim'))]);
-                end
-            end
-            
+                obj.plot_e0M_pcurv(obj, phix, pInt, r, 'x');
+            end    
             if strcmp(r.plot, 'all') || strcmp(r.plot, 'pphiy')
-                plt = figure();
-                movegui(plt, 'center');
-                set(gcf, 'name', 'P vs \phi_y');
-                plot(phiy, pInt, '-', 'LineWidth', 1.5);
-                grid on;
-                grid minor;
-                xlabel(sprintf('Curvatura \\phi_y (%s)', r.unitload));
-                ylabel('Carga axial P');
-                title(sprintf('Carga axial vs curvatura \\phi_y - %s', secName));
-                if r.limPos
-                    ylim([0, max(get(gca, 'ylim'))]);
-                end
+                obj.plot_e0M_pcurv(obj, phiy, pInt, r, 'y');
             end
             
             % Finaliza el grafico
             drawnow();
             
-        end % plote_0M function
+        end % plot_e0M function
         
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
@@ -510,5 +374,117 @@ classdef SectionAnalysis < BaseModel
         end % disp function
         
     end % public methods
+    
+    methods(Access = private)
+        
+        function plot_e0M_mcurv(obj, phi, mxInt, myInt, r, curvAxis, ...
+                secName)%#ok<INUSL>
+            % plot_e0M_mcurv: Grafica momento curvatura
+            
+            plt = figure();
+            movegui(plt, 'center');
+            set(gcf, 'name', 'Momento curvatura');
+            hold on;
+            if strcmp(r.m, 'all')
+                plot(phi, mxInt, '-', 'LineWidth', 1.5);
+                plot(phi, myInt, '-', 'LineWidth', 1.5);
+                leg = {'M_x', 'M_y'};
+            elseif strcmp(r.m, 'x')
+                plot(phi, mxInt, '-', 'LineWidth', 1.5);
+                leg = {'M_x'};
+            elseif strcmp(r.m, 'y')
+                plot(phi, myInt, '-', 'LineWidth', 1.5);
+                leg = {'M_y'};
+            else
+                error('Valor incorrecto parametro m: all,x,y');
+            end
+            
+            % Carga sap
+            if ~strcmp(r.sapfile, '')
+                sapF = load(r.sapfile);
+                sapPhi = sapF(:, r.sapcolumnPhi) .* r.sapfactorPhi;
+                sapM = sapF(:, r.sapcolumnM) .* r.sapfactorM;
+                sapMint = interp1(sapPhi, sapM, phi, 'linear', 'extrap');
+                plot(phi, sapMint, '-', 'LineWidth', 1.5);
+                if ~strcmp(r.saplegend, '')
+                    leg{length(leg)+1} = r.saplegend;
+                end
+            end
+            
+            % Ajusta el grafico
+            grid on;
+            grid minor;
+            xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
+            ylabel(sprintf('Momento M (%s)', r.unitload));
+            title(sprintf('Momento curvatura M/\\phi_%s - %s', curvAxis, secName));
+            legend(leg, 'location', r.legend);
+            if r.limPos
+                ylim([0, max(get(gca, 'ylim'))]);
+            end
+            
+            % Genera la diferencia
+            if ~strcmp(r.sapfile, '') && r.sapdiff && ...
+                    (strcmp(r.m, 'x') || strcmp(r.m, 'y'))
+                
+                % Diferencia absoluta
+                plt = figure();
+                movegui(plt, 'center');
+                set(gcf, 'name', 'Diferencia entre archivo y calculo');
+                hold on;
+                if strcmp(r.m, 'x')
+                    mInt = mxInt;
+                else
+                    mInt = myInt;
+                end
+                
+                mDiff = zeros(1, length(phi));
+                for i = 1:length(phi)
+                    mDiff(i) = sapMint(i) - mInt(i);
+                end
+                plot(phi, mDiff, 'k-', 'LineWidth', 1.5);
+                
+                grid on;
+                grid minor;
+                xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
+                ylabel(sprintf('Diferencia momento M (%s)', r.unitload));
+                title('Diferencia momento absoluta');
+                
+                % Diferencia relativa
+                plt = figure();
+                movegui(plt, 'center');
+                set(gcf, 'name', 'Diferencia entre archivo y calculo');
+                hold on;
+                mDiffAbs = (mDiff ./ sapMint) .* 100;
+                mDiffAbs = medfilt1(mDiffAbs, 3);
+                plot(phi, mDiffAbs, 'k-', 'LineWidth', 1.5);
+                grid on;
+                grid minor;
+                xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
+                ylabel('Diferencia momento (%)');
+                title('Diferencia momento relativa');
+                
+            end
+            
+        end % plot_e0M_mcurv function
+        
+        function plot_e0M_pcurv(obj, phi, pInt, r, curvAxis) %#ok<INUSL>
+            % plot_e0M_pcurv: Grafica carga curvatura
+            
+            plt = figure();
+            movegui(plt, 'center');
+            set(gcf, 'name', sprintf('P vs \\phi_%s', curvAxis));
+            plot(phi, pInt, '-', 'LineWidth', 1.5);
+            grid on;
+            grid minor;
+            xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitload));
+            ylabel('Carga axial P');
+            title(sprintf('Carga axial vs curvatura \\phi_%s - %s', curvAxis, secName));
+            if r.limPos
+                ylim([0, max(get(gca, 'ylim'))]);
+            end
+            
+        end % plot_e0M_pcurv function
+        
+    end % private methods
     
 end % SectionAnalysis class

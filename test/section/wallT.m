@@ -23,27 +23,30 @@ steel.getStressDeformation('emin', -2.5e-1, 'emax', 3.1e-1, ...
     'file', 'test/section/mat/steel.txt');
 
 % Agrega los elementos
-caso = '1';
+caseNum = '4.2';
 h = 5000;
 b = 4000;
 bw = 300;
 d = 125;
 bw2 = 500;
-incrementos = 500;
+increments = 100;
+showSap = true; % En sap P=0
 
 % Genera la seccion
-if strcmp(caso, '1')
+if strcmp(caseNum, '1')
     As = 4000;
     Asp = 4000;
-    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 15, 1, concreteA);
-    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 100, 1, concreteA);
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, concreteA);
+    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, concreteA);
     wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
     wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
-    p = linspace(0, 0, incrementos)';
-    phix = linspace(0, 0, incrementos)';
-    phiy = linspace(0, 1.2e-5, incrementos)';
-elseif strcmp(caso, '2')
+    p = linspace(0, 0, increments)';
+    curv = 4e-5;
+    curvang = 90;
+    plotPhi = 'mphiy';
+    plotMphi = 'y';
+elseif strcmp(caseNum, '2')
     As = 8000;
     Asp = 8000;
     wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, concreteA);
@@ -51,10 +54,12 @@ elseif strcmp(caso, '2')
     wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
     wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
-    p = ones(incrementos, 1) .* 9000 * 1000; % N
-    phix = linspace(0, 0, incrementos)';
-    phiy = linspace(0, 4e-5, incrementos)';
-elseif strcmp(caso, '3')
+    p = ones(increments, 1) .* 9000 * 1000 * ~showSap; % N
+    curv = 4e-5;
+    curvang = 90;
+    plotPhi = 'mphiy';
+    plotMphi = 'y';
+elseif strcmp(caseNum, '3')
     As = 8000;
     Asp = 8000;
     wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, concreteB);
@@ -62,10 +67,12 @@ elseif strcmp(caso, '3')
     wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
     wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
-    p = ones(incrementos, 1) .* 9000 * 1000; % N
-    phix = linspace(0, 0, incrementos)';
-    phiy = linspace(0, 4e-5, incrementos)';
-elseif strcmp(caso, '4.1')
+    p = ones(increments, 1) .* 9000 * 1000 * ~showSap; % N
+    curv = 4e-5;
+    curvang = 90;
+    plotPhi = 'mphiy';
+    plotMphi = 'y';
+elseif strcmp(caseNum, '4.1')
     As = 8000;
     Asp = 8000;
     wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, concreteB);
@@ -74,10 +81,12 @@ elseif strcmp(caso, '4.1')
     wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
     wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
-    p = ones(incrementos, 1) .* 9000 * 1000; % N
-    phix = linspace(0, 0, incrementos)';
-    phiy = linspace(0, 4e-5, incrementos)';
-elseif strcmp(caso, '4.2')
+    p = ones(increments, 1) .* 9000 * 1000 * ~showSap; % N
+    curv = 4e-5;
+    curvang = 90;
+    plotPhi = 'mphiy';
+    plotMphi = 'y';
+elseif strcmp(caseNum, '4.2')
     As = 8000;
     Asp = 8000;
     wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 1, 80, concreteB);
@@ -86,15 +95,19 @@ elseif strcmp(caso, '4.2')
     wallt.addFiniteArea(-h/2+d, -b/2+d, As, steel);
     wallt.addFiniteArea(-h/2+d, b/2-d, As, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
-    p = ones(incrementos, 1) .* 9000 * 1000; % N
-    phix = linspace(0, 4.5e-5, incrementos)';
-    phiy = linspace(0, 0, incrementos)';
+    p = ones(increments, 1) .* 9000 * 1000 * ~showSap; % N
+    curv = 4e-5;
+    curvang = 0;
+    plotPhi = 'mphix';
+    plotMphi = 'x';
 else
     error('Caso invalido');
 end
 ppos = [0, 0]; % Ubicado en h/2, o sea, al centro del muro
+phix = linspace(0, curv, increments) .* cos(curvang/180*pi());
+phiy = linspace(0, curv, increments) .* sin(curvang/180*pi());
 
-wallt.setName(sprintf('Muro T - Caso %s', caso));
+wallt.setName(sprintf('Muro T - Caso %s', caseNum));
 wallt.disp();
 wallt.plot('showdisc', true);
 
@@ -103,11 +116,11 @@ analysis = SectionAnalysis('Analisis', 500, 0.01, 'showprogress', true);
 e0 = analysis.calc_e0M(wallt, p, phix, phiy, ppos);
 
 % Grafica, N*mm -> kN*m
-if ~strcmp(caso, '4.2')
-    analysis.plot_e0M('plot', 'mphiy', 'factor', 1e-6, 'm', 'y', ...
-        'sapfile', 'test/section/mcurv-sap2000/wallT1.txt', ...
-        'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6);
-else
-    analysis.plot_e0M('plot', 'mphix', 'factor', 1e-6);
+if showSap
+    analysis.plot_e0M('plot', plotPhi, 'factor', 1e-6, 'm', plotMphi, ...
+        'sapfile', sprintf('test/section/mcurv-sap2000/wallT%s.txt', caseNum), ...
+        'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
+        'sapdiff', true);
 end
+analysis.plot_e0M('plot', plotPhi, 'factor', 1e-6, 'm', plotMphi);
 wallt.plotStress(e0, phix, phiy, 'i', 1, 'mfactor', 1e-6, 'pfactor', 1e-3);
