@@ -98,6 +98,14 @@ classdef SectionDesigner < BaseModel
                 error('La discretizacion del elemento no puede ser nula');
             end
             
+            if b < 0 || h < 0
+                error('El ancho o el largo deben ser positivos');
+            end
+            
+            if length(xc) ~= 1 || length(yc) ~= 1
+                error('El centro debe ser un punto, no vector');
+            end
+            
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('color', material.getColor());
@@ -256,6 +264,9 @@ classdef SectionDesigner < BaseModel
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'addDiscreteSquare(xc,yc,L,n,material,varargin)');
             end
+            if L < 0
+                error('El largo debe ser mayor a cero');
+            end
             obj.addDiscreteRect(xc, yc, L, L, n, n, material, varargin{:}, 'xco', xc, 'yco', yc);
             
         end % addDiscreteSquare function
@@ -289,9 +300,20 @@ classdef SectionDesigner < BaseModel
                     'addDiscreteISection(xc,yc,bi,bs,h,ti,ts,tw,nx,ny,material,varargin)');
             end
             
+            if h <= 0
+                error('Altura del perfil invalida');
+            end
+            if bi <= 0 || bs <= 0
+                error('Ancho de alas invalidos');
+            end
+            
             % Calcula las particiones
             nyts = max(1, ceil(ny/h*ts));
             nyti = max(1, ceil(ny/h*ti));
+            if ny - nyts - nyti < 0
+                error('La suma del alto de las alas no puede exceder la altura del perfil');
+            end
+            
             nyw = max(1, ny-nyts-nyti); % Alma
             bf = max(bi, bs);
             nxts = max(1, ceil(nx/bf*bs));
@@ -456,13 +478,122 @@ classdef SectionDesigner < BaseModel
             %   re              Radio exterior
             %   n               Discretizacion
             %   material        Material de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   nrad            Numero de discretizacion radial
+            %   ntheta          Numero de discretizacion en angulo
+            %   linewidth       Ancho de linea de la seccion
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
+            %   transparency    Transparencia de la seccion
             
-            if nargin < 5
+            p = inputParser;
+            p.KeepUnmatched = true;
+            
+            p.addOptional('nrad', 0);
+            p.addOptional('ntheta', 100);
+            parse(p, varargin{:});
+            r = p.Results;
+            
+            if nargin < 7
                 error('Numero de parametros incorrectos, uso: %s', ...
-                    'addFiniteArea(xc,yc,area,material,varargin)');
+                    'addDiscreteTubular(obj,xc,yc,ri,rf,n,material,varargin)');
             end
             
+            if ri > rf
+                error('El radio interior no puede exceder al exterior');
+            end
+            if n <= 0
+                error('Discretizacion invalida');
+            end
+            
+            % Porte de cada discretizacion
+            n = n / 2;
+            dd = rf / n;
+            
+            % Parametriza el circulo
+            ang = linspace(0, pi()/2, r.ntheta);
+            nrad = ceil((rf - ri + 2*dd)/dd);
+            if r.nrad ~= 0
+                nrad = r.nrad;
+            end
+            rad = linspace(ri+dd/2, rf-dd/2, nrad);
+            aPoints = {};
+            k = 1; % Puntos agregados
+            
+            for j = 1:nrad % Discretiza en el radio
+                last = [Inf, Inf];
+                for i = 1:r.ntheta % Discretiza en el angulo
+                    
+                    xi = (rad(j)) * cos(ang(i));
+                    yi = (rad(j)) * sin(ang(i));
+                    xi = xi - mod(xi, dd);
+                    yi = yi - mod(yi, dd);
+                    
+                    % Si el punto no ha sido agregado
+                    if (xi ~= last(1) || yi ~= last(2)) && ...
+                            ~isCellMember(aPoints, sprintf('%d,%d', xi, yi))
+                        
+                        % Agrega punto original
+                        obj.addDiscreteRect(xc+xi, yc+yi, dd, dd, 1, 1, material, varargin{:}, 'rotation', 0, 'xco', xc', 'yco', yc);
+                        aPoints{k} = sprintf('%d,%d', xi, yi);
+                        k = k + 1;
+                        last(1) = xi;
+                        last(2) = yi;
+                        
+                        % Agrega el reflejo en x
+                        if ~isCellMember(aPoints, sprintf('%d,%d', -xi, yi))
+                            obj.addDiscreteRect(xc-xi, yc+yi, dd, dd, 1, 1, material, varargin{:}, 'rotation', 0, 'xco', xc', 'yco', yc);
+                            aPoints{k} = sprintf('%d,%d', -xi, yi);
+                            k = k + 1;
+                        end
+                        
+                        % Agrega el reflejo en y
+                        if ~isCellMember(aPoints, sprintf('%d,%d', xi, -yi))
+                            obj.addDiscreteRect(xc+xi, yc-yi, dd, dd, 1, 1, material, varargin{:}, 'rotation', 0, 'xco', xc', 'yco', yc);
+                            aPoints{k} = sprintf('%d,%d', xi, -yi);
+                            k = k + 1;
+                        end
+                        
+                        % Agrega el reflejo en xy
+                        if ~isCellMember(aPoints, sprintf('%d,%d', -xi, -yi))
+                            obj.addDiscreteRect(xc-xi, yc-yi, dd, dd, 1, 1, material, varargin{:}, 'rotation', 0, 'xco', xc', 'yco', yc);
+                            aPoints{k} = sprintf('%d,%d', -xi, -yi);
+                            k = k + 1;
+                        end
+                    end
+                    
+                end % Angulo
+            end % Radio
+            
         end % addDiscreteTubular function
+        
+        function addDiscreteCircle(obj, xc, yc, r, n, material, varargin)
+            % addDiscreteCircle: Crea seccion circular
+            %
+            % Parametros requeridos
+            %   xc              Posicion del centro del area en x
+            %   yc              Posicion del centro del area en y
+            %   r               Radio
+            %   n               Discretizacion
+            %   material        Material de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   ntheta          Numero de discretizacion en angulo
+            %   linewidth       Ancho de linea de la seccion
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 6
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteCircle(obj,xc,yc,r,n,material,varargin)');
+            end
+            obj.addDiscreteTubular(xc, yc, 0, r, n, material, varargin{:});
+            
+        end % addDiscreteCircle function
         
         function addFiniteArea(obj, xc, yc, area, material, varargin)
             % addFiniteArea: Agrega un area finita
