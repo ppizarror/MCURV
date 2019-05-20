@@ -483,6 +483,8 @@ classdef SectionDesigner < BaseModel
             % plot: Grafica la seccion
             %
             % Parametros opcionales:
+            %   axis                Escribe los ejes
+            %   axisSize            Largo de los ejes
             %   center              Muestra o no el centroide
             %   centerColor         Color del centroide
             %   centerLineWidth     Ancho de linea del centroide
@@ -499,6 +501,8 @@ classdef SectionDesigner < BaseModel
             
             p = inputParser;
             p.KeepUnmatched = true;
+            p.addOptional('axis', true);
+            p.addOptional('axisSize', 0.15);
             p.addOptional('centroid', true);
             p.addOptional('centroidColor', [1, 1, 0]);
             p.addOptional('centroidLineWidth', 2);
@@ -576,18 +580,42 @@ classdef SectionDesigner < BaseModel
             ylabel(sprintf('y (%s)', r.units));
             title(r.title);
             
+            % Realiza algunos calculos
+            [gx, gy] = obj.getCenter();
+            [xc, yc] = obj.getCentroid();
+            [sx, sy] = getSize(obj);
+            
             % Escribe el centro de gravedad
             if r.centroid
-                [x, y] = obj.getCentroid();
-                plot(x, y, '+', 'Color', r.centroidColor, 'MarkerSize', ...
+                plot(xc, yc, '+', 'Color', r.centroidColor, 'MarkerSize', ...
                     r.centroidMarkerSize, 'LineWidth', r.centroidLineWidth);
             end
             
             % Escribe el centro geometrico
             if r.center
-                [gx, gy] = obj.getCenter();
                 plot(gx, gy, '+', 'Color', r.centerColor, 'MarkerSize', ...
                     r.centerMarkerSize, 'LineWidth', r.centerLineWidth);
+            end
+            
+            % Escribe los ejes
+            if r.axis
+                
+                % Eje x
+                lx = r.axisSize * sx;
+                p1 = [gx, gy];
+                p2 = [gx + lx, gy];
+                dp = p2 - p1;
+                quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [1, 0, 0]);
+                text(p2(1)-0.1*lx, p2(2)+0.15*lx, 'x', 'Color', [1, 0, 0]);
+                
+                % Eje y
+                ly = r.axisSize * sy;
+                p1 = [gx, gy];
+                p2 = [gx, gy + ly];
+                dp = p2 - p1;
+                quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [0, 1, 0]);
+                text(p2(1)+0.1*ly, p2(2), 'y', 'Color', [0, 1, 0]);
+                
             end
             
             % Finaliza el grafico
