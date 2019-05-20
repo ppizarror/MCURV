@@ -1,6 +1,6 @@
 % Prueba la adicion de secciones avanzadas
 ashapes = SectionDesigner('Figuras avanzadas');
-steel = ElastoplasticSteel('AceroA36', 294.31, 200894.198, 1120.531847, 0.246197);
+steel = ElastoplasticSteel('Acero A36', 294.31, 200894.198, 1120.531847, 0.246197);
 
 ashapes.addDiscreteISection(-100, 100, 300, 200, 100, 20, 20, 6, 20, 50, steel, 'rotation', 30);
 ashapes.addDiscreteHSection(100, 100, 300, 200, 20, 6, 20, 50, steel, 'rotation', 30);
@@ -20,5 +20,6 @@ phiy = linspace(0, 0, 100)';
 e0 = analysis.calc_e0M(ashapes, p, phix, phiy);
 
 % Grafica resultados
-analysis.plot_e0M('plot', 'mphix', 'factor', 1e-6, 'm', 'x'); % N*mm -> kN*m
-ashapes.plotStress(e0, phix, phiy, 'i', 2, 'mfactor', 1e-6, 'pfactor', 1e-3);
+analysis.plot_e0M('plot', 'mphix', 'm', 'x'); % N*mm -> kN*m
+analysis.plot_e0M('plot', 'pphix');
+ashapes.plotStress(e0, phix, phiy, 'i', 2, 'factorM', 1e-6, 'factorP', 1e-3);

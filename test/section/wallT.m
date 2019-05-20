@@ -23,7 +23,7 @@ steel.getStressDeformation('emin', -2.5e-1, 'emax', 3.1e-1, ...
     'file', 'test/section/mat/steel.txt');
 
 % Agrega los elementos
-caseNum = '4.2';
+caseNum = '1';
 h = 5000;
 b = 4000;
 bw = 300;
@@ -105,12 +105,12 @@ analysis.calc_e0M_angle(wallt, p, phi, curvang, 'ppos', [0, 0]);
 
 % Grafica, N*mm -> kN*m
 if showSap
-    analysis.plot_e0M('plot', 'mphi', 'factor', 1e-6, 'm', 'T', ...
+    analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
         'sapfile', sprintf('test/section/mcurv-sap2000/wallT%s_%d.txt', caseNum, curvang), ...
         'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
         'sapdiff', true);
 else
-    analysis.plot_e0M('plot', 'mphi', 'factor', 1e-6, 'm', 'T'); %#ok<*UNRCH>
+    analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T'); %#ok<*UNRCH>
 end
-analysis.plotStress(2, 'mfactor', 1e-6, 'pfactor', 1e-3);
+analysis.plotStress(2, 'factorM', 1e-6, 'factorP', 1e-3);
 % analysis.plot_lastIter();

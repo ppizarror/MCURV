@@ -7,7 +7,7 @@ steel.setColor([0, 0, 0.5]);
 concrete = HognestadConcrete('Hormigon', 25, 0.0025);
 
 % Agrega los elementos a la seccion
-simplebeam.addDiscreteRect(0, 0, 350, 700, 25, 25, concrete, 'rotation', 0);
+simplebeam.addDiscreteRect(0, 0, 350, 700, 1, 25, concrete, 'rotation', 0);
 simplebeam.addFiniteArea(-130, -350+55, 1050, steel);
 simplebeam.addFiniteArea(-130, 350-55, 1050, steel);
 simplebeam.addFiniteArea(130, -350+55, 1050, steel);
@@ -23,9 +23,9 @@ analysis = SectionAnalysis('Analisis', 100, 0.1);
 p = linspace(0, 0, 100)';
 phix = linspace(0, 1.2e-4, 100)';
 phiy = linspace(0, 0, 100)';
-e0 = analysis.calc_e0M(simplebeam, p, phix, phiy);
+analysis.calc_e0M(simplebeam, p, phix, phiy);
 
 % Grafica resultados
-analysis.plot_e0M('plot', 'mphix', 'factor', 1.019716e-7, 'm', 'x', ...
+analysis.plot_e0M('plot', 'mphix', 'factorM', 1.019716e-7, 'm', 'x', ...
     'sapfile', 'test/section/mcurv-sap2000/simpleBeam.txt', 'sapfactor', 1);
-simplebeam.plotStress(e0, phix, phiy, 'i', 1);
+analysis.plotStress(2, 'axisequal', true, 'plot', 'sing');

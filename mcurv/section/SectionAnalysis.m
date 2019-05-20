@@ -350,10 +350,11 @@ classdef SectionAnalysis < BaseModel
             % plot_e0M: Grafica el ultimo analisis de e0M
             %
             % Parametros opcionales:
-            %   factor          Factor de escala para el momento
+            %   factorM         Factor de escala para el momento
+            %   factorP         Factor de escala para la carga axial
             %   legend          Ubicacion de la leyenda
             %   limPos          Limita analisis a valores positivos
-            %   m               Que eje usar, 'all', 'x', 'y'
+            %   m               Eje analisis momento 'all','x','y','T'
             %   medfilt         Aplica medfilt
             %   medfiltN        Numero de filtro
             %   plot            Tipo de grafico
@@ -365,14 +366,16 @@ classdef SectionAnalysis < BaseModel
             %   sapfile         Carga un archivo, solo para m:x/y
             %   saplegend       Leyenda del archivo
             %   unitlength      Unidad de longitud
-            %   unitload        Unidad de carga
+            %   unitloadM       Unidad de carga para el momento
+            %   unitloadP       Unidad de carga axial
             
             p = inputParser;
             p.KeepUnmatched = true;
-            p.addOptional('factor', 1); % Si se usan N*mm a tonf-m
+            p.addOptional('factorM', 1e-6); % Si se usan N*mm a kN-m
+            p.addOptional('factorP', 1e-3); % Si se usan N a kN
             p.addOptional('legend', 'southeast');
             p.addOptional('limPos', true)
-            p.addOptional('m', 'all'); % Cual eje usar para el momento: 'x','y','T'
+            p.addOptional('m', 'T'); % Cual eje usar para el momento: 'all','x','y','T'
             p.addOptional('medfilt', true); % Aplica medfilt
             p.addOptional('medfiltN', 3);
             p.addOptional('plot', 'all');
@@ -383,8 +386,9 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('sapfactorPhi', 1);
             p.addOptional('sapfile', ''); % Archivo de sap
             p.addOptional('saplegend', 'SAP2000');
-            p.addOptional('unitlength', '1/mm'); % Unidad de largo
-            p.addOptional('unitload', 'kN*m'); % Unidad de carga
+            p.addOptional('unitlength', '1/mm'); % Unidad de largo curvatura
+            p.addOptional('unitloadM', 'kN*m'); % Unidad de carga
+            p.addOptional('unitloadP', 'kN'); % Unidad de carga
             parse(p, varargin{:});
             r = p.Results;
             
@@ -392,11 +396,11 @@ classdef SectionAnalysis < BaseModel
                 error('Analisis e0M no ha sido ejecutado');
             end
             
-            mxInt = abs(obj.lastsole0p{1}.*r.factor);
-            myInt = abs(obj.lastsole0p{2}.*r.factor);
+            mxInt = abs(obj.lastsole0p{1}.*r.factorM);
+            myInt = abs(obj.lastsole0p{2}.*r.factorM);
             phix = abs(obj.lastsole0p{3});
             phiy = abs(obj.lastsole0p{4});
-            pInt = obj.lastsole0p{5};
+            pInt = obj.lastsole0p{5} .* r.factorP;
             % pRre = obj.lastsole0p{6};
             % e0 = obj.lastsole0p{7};
             secName = obj.lastsole0p{8}.getName();
@@ -404,6 +408,7 @@ classdef SectionAnalysis < BaseModel
             mode = obj.lastsole0p{10};
             angle = obj.lastsole0p{11};
             phi = obj.lastsole0p{12};
+            defTotal = obj.lastsole0p{13};
             
             % Aplica medfilt
             if r.medfilt
@@ -424,6 +429,10 @@ classdef SectionAnalysis < BaseModel
                     obj.plot_e0M_pcurv(phi, pInt, r, 'a', secName, angle);
                     doPlot = true;
                 end
+                if strcmp(r.plot, 'all') || strcmp(r.plot, 'ephi')
+                    obj.plot_e0M_ecurv(phi, defTotal, r, 'a', secName, angle);
+                    doPlot = true;
+                end
             else
                 if strcmp(r.plot, 'all') || strcmp(r.plot, 'mphix')
                     obj.plot_e0M_mcurv(phix, mxInt, myInt, r, 'x', secName, angle);
@@ -441,10 +450,18 @@ classdef SectionAnalysis < BaseModel
                     obj.plot_e0M_pcurv(phiy, pInt, r, 'y', secName, angle);
                     doPlot = true;
                 end
+                if strcmp(r.plot, 'all') || strcmp(r.plot, 'ephix')
+                    obj.plot_e0M_ecurv(phix, defTotal, r, 'x', secName, angle);
+                    doPlot = true;
+                end
+                if strcmp(r.plot, 'all') || strcmp(r.plot, 'ephiy')
+                    obj.plot_e0M_ecurv(phiy, defTotal, r, 'y', secName, angle);
+                    doPlot = true;
+                end
             end
             
             if ~doPlot
-                error('Tipo grafico incorrecto, valores plot: all,mphi,pphi,mphix,phiy,pphix,pphiy');
+                error('Tipo grafico incorrecto, valores plot: all,mphi,pphi,ephi,mphix,phiy,pphix,pphiy,ephix,ephiy');
             end
             
             % Finaliza el grafico
@@ -474,7 +491,9 @@ classdef SectionAnalysis < BaseModel
             %   showgrid        Muestra la grilla de puntos
             %   showmesh        Muesra el meshado de la geometria
             %   unitlength      Unidad de largo
-            %   unitload        Unidad de carga
+            %   unitloadF       Unidad de tension
+            %   unitloadM       Unidad de momento
+            %   unitloadP       Unidad de carga axial
             
             if isempty(obj.lastsole0p)
                 error('Analisis e0M no ha sido ejecutado');
@@ -485,9 +504,9 @@ classdef SectionAnalysis < BaseModel
                     'plotStress(i,varargin)');
             end
             
-            phix = abs(obj.lastsole0p{3});
-            phiy = abs(obj.lastsole0p{4});
-            e0 = obj.lastsole0p{12};
+            phix = obj.lastsole0p{3};
+            phiy = obj.lastsole0p{4};
+            e0 = obj.lastsole0p{13};
             section = obj.lastsole0p{8};
             mode = obj.lastsole0p{10};
             angle = obj.lastsole0p{11};
@@ -514,9 +533,13 @@ classdef SectionAnalysis < BaseModel
     
     methods(Access = private)
         
-        function plot_e0M_mcurv(obj, phi, mxInt, myInt, r, curvAxis, ...
-                secName, angle)%#ok<INUSL>
+        function plot_e0M_mcurv(obj, phi, mxInt, myInt, r, curvAxis, secName, angle) %#ok<INUSL>
             % plot_e0M_mcurv: Grafica momento curvatura
+            
+            if min(phi) == max(phi)
+                warning('Vector de curvatura phi no posee variacion');
+                return;
+            end
             
             plt = figure();
             movegui(plt, 'center');
@@ -575,10 +598,10 @@ classdef SectionAnalysis < BaseModel
                 title(sprintf('Momento curvatura %s/\\phi_%s - %s', mAxis, curvAxis, secName));
                 xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
             else
-                title({sprintf('Momento curvatura %s/\\phi - Angulo %.1f°', mAxis, angle), secName});
+                title({sprintf('Momento curvatura %s/\\phi - Angulo %.1f', mAxis, angle), secName});
                 xlabel(sprintf('Curvatura \\phi (%s)', r.unitlength));
             end
-            ylabel(sprintf('Momento %s (%s)', mAxis, r.unitload));
+            ylabel(sprintf('Momento %s (%s)', mAxis, r.unitloadM));
             legend(leg, 'location', r.legend);
             if r.limPos
                 ylim([0, max(get(gca, 'ylim'))]);
@@ -615,7 +638,7 @@ classdef SectionAnalysis < BaseModel
                 else
                     xlabel(sprintf('Curvatura \\phi (%s)', r.unitlength));
                 end
-                ylabel(sprintf('Diferencia momento %s (%s)', mAxis, r.unitload));
+                ylabel(sprintf('Diferencia momento %s (%s)', mAxis, r.unitloadM));
                 title('Diferencia momento absoluta');
                 xlim([min(phi), max(phi)]);
                 
@@ -645,20 +668,24 @@ classdef SectionAnalysis < BaseModel
         function plot_e0M_pcurv(obj, phi, pInt, r, curvAxis, secName, angle) %#ok<INUSL>
             % plot_e0M_pcurv: Grafica carga curvatura
             
+            if min(phi) == max(phi)
+                warning('Vector de curvatura phi no posee variacion');
+                return;
+            end
             plt = figure();
             movegui(plt, 'center');
             set(gcf, 'name', sprintf('P vs \\phi_%s', curvAxis));
             plot(phi, pInt, '-', 'LineWidth', 1.5);
             grid on;
             grid minor;
-            ylabel('Carga axial P');
+            ylabel(sprintf('Carga axial P (%s)', r.unitloadP));
             
             if ~strcmp(curvAxis, 'a')
-                title(sprintf('Carga axial vs curvatura \\phi_%s - %s', curvAxis, secName));
-                xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitload));
+                title({sprintf('Carga axial vs curvatura \\phi_%s', curvAxis), secName});
+                xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
             else
-                title({sprintf('Carga axial vs curvatura \\phi - Angulo %.1f°', angle), secName});
-                xlabel(sprintf('Curvatura \\phi (%s)', r.unitload));
+                title({sprintf('Carga axial vs curvatura \\phi - Angulo %.1f', angle), secName});
+                xlabel(sprintf('Curvatura \\phi (%s)', r.unitlength));
             end
             if r.limPos
                 ylim([0, max(get(gca, 'ylim'))]);
@@ -666,6 +693,35 @@ classdef SectionAnalysis < BaseModel
             xlim([min(phi), max(phi)]);
             
         end % plot_e0M_pcurv function
+        
+        function plot_e0M_ecurv(obj, phi, pInt, r, curvAxis, secName, angle) %#ok<INUSL>
+            % plot_e0M_ecurv: Grafica deformacion
+            
+            if min(phi) == max(phi)
+                warning('Vector de curvatura phi no posee variacion');
+                return;
+            end
+            plt = figure();
+            movegui(plt, 'center');
+            set(gcf, 'name', sprintf('e_0 vs \\phi_%s', curvAxis));
+            plot(phi, pInt, '-', 'LineWidth', 1.5);
+            grid on;
+            grid minor;
+            ylabel('Deformacion e_0 (-)');
+            
+            if ~strcmp(curvAxis, 'a')
+                title({sprintf('Deformacion vs curvatura \\phi_%s', curvAxis), secName});
+                xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
+            else
+                title({sprintf('Deformacion vs curvatura \\phi - Angulo %.1f', angle), secName});
+                xlabel(sprintf('Curvatura \\phi (%s)', r.unitlength));
+            end
+            if r.limPos
+                ylim([0, max(get(gca, 'ylim'))]);
+            end
+            xlim([min(phi), max(phi)]);
+            
+        end % plot_e0M_ecurv function
         
     end % private methods
     

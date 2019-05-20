@@ -812,7 +812,9 @@ classdef SectionDesigner < BaseModel
             %   showgrid        Muestra la grilla de puntos
             %   showmesh        Muesra el meshado de la geometria
             %   unitlength      Unidad de largo
-            %   unitload        Unidad de carga
+            %   unitloadF       Unidad de tension
+            %   unitloadM       Unidad de momento
+            %   unitloadP       Unidad de carga axial
             
             % Verificacion inicial
             if length(e0) ~= length(phix) || length(e0) ~= length(phiy)
@@ -829,16 +831,16 @@ classdef SectionDesigner < BaseModel
             p.addOptional('i', 1);
             p.addOptional('limMargin', 0);
             p.addOptional('mode', 'xy'); % Interno, 'xy','a'
-            p.addOptional('mfactor', 1);
-            p.addOptional('munits', 'kN*m');
+            p.addOptional('factorM', 1e-6); % N*mm -> kN*m
             p.addOptional('normaspect', false);
-            p.addOptional('pfactor', 1);
+            p.addOptional('factorP', 1e-3); % N -> kN
             p.addOptional('plot', 'cont');
-            p.addOptional('punits', 'kN');
             p.addOptional('showgrid', true);
             p.addOptional('showmesh', false);
             p.addOptional('unitlength', 'mm');
-            p.addOptional('unitload', 'MPa');
+            p.addOptional('unitloadF', 'MPa');
+            p.addOptional('unitloadM', 'kN*m');
+            p.addOptional('unitloadP', 'kN');
             parse(p, varargin{:});
             r = p.Results;
             
@@ -851,20 +853,25 @@ classdef SectionDesigner < BaseModel
             fprintf('\tTipo: %s\n', r.plot);
             
             r.i = ceil(r.i);
-            if length(e0) >= r.i && r.i > 0
-                e0 = e0(r.i);
-                phix = phix(r.i);
-                phiy = phiy(r.i);
+            if r.i > 0
+                if length(e0) >= r.i
+                    e0 = e0(r.i);
+                    phix = phix(r.i);
+                    phiy = phiy(r.i);
+                else
+                    error('El punto de evaluacion i=%d excede el largo del vector de soluciones (%d)', ...
+                        r.i, length(e0));
+                end
             end
             
             % Aplica limites
-            if e0 < 1e-20
+            if abs(e0) < 1e-20
                 e0 = 0;
             end
-            if phix < 1e-20
+            if abs(phix) < 1e-20
                 phix = 0;
             end
-            if phiy < 1e-20
+            if abs(phiy) < 1e-20
                 phiy = 0;
             end
             
@@ -875,28 +882,28 @@ classdef SectionDesigner < BaseModel
             end
             
             fprintf('\tDeformaciones:\n');
-            fprintf('\t\te0: %e\n', e0);
-            fprintf('\t\tphix: %e\n', phix);
-            fprintf('\t\tphiy: %e\n', phiy);
+            fprintf('\t\te0: %e (-)\n', e0);
+            fprintf('\t\tphix: %e (1/%s)\n', phix, r.unitlength);
+            fprintf('\t\tphiy: %e (1/%s)\n', phiy, r.unitlength);
             
             % Calcula cargas
             p = obj.calcP(e0, phix, phiy);
             mx = obj.calcMx(e0, phix, phiy);
             my = obj.calcMy(e0, phix, phiy);
             fprintf('\tCargas:\n');
-            fprintf('\t\tP axial: %.2f %s\n', p*r.pfactor, r.punits);
-            fprintf('\t\tMx: %.2f %s\n', mx*r.mfactor, r.munits);
-            fprintf('\t\tMy: %.2f %s\n', my*r.mfactor, r.munits);
+            fprintf('\t\tP axial: %.2f %s\n', p*r.factorP, r.unitloadP);
+            fprintf('\t\tMx: %.2f %s\n', mx*r.factorM, r.unitloadM);
+            fprintf('\t\tMy: %.2f %s\n', my*r.factorM, r.unitloadM);
             
             % Genera el titulo
-            if strcmp(r.mode, 'a')
+            if strcmp(r.mode, 'xy')
                 plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
                     sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
             else
-                plotTitle = {sprintf('%s  -  Angulo %.1f°  -  Esfuerzos i=%d', obj.getName(), r.angle, r.i), ...
+                plotTitle = {sprintf('%s  -  Angulo %.1f  -  Esfuerzos i=%d', obj.getName(), r.angle, r.i), ...
                     sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
             end
-                
+            
             if length(e0) ~= 1
                 error('Solo se puede graficar un punto de e0,phix/y, no un vector');
             end
@@ -978,7 +985,7 @@ classdef SectionDesigner < BaseModel
                         'FaceColor', obj.contParams{i}.color, ...
                         'EdgeColor', [0, 0, 0], ...
                         'LineWidth', obj.contParams{i}.linewidth*0.5, ...
-                        'FaceAlpha', 0);
+                        'FaceAlpha', 0.1, 'EdgeAlpha', 1);
                 end
                 
                 % Grafica los singulares
@@ -1036,7 +1043,7 @@ classdef SectionDesigner < BaseModel
             % Cambia los label
             xlabel(sprintf('x (%s)', r.unitlength));
             ylabel(sprintf('y (%s)', r.unitlength));
-            ylabel(h, sprintf('\\sigma (%s)', r.unitload));
+            ylabel(h, sprintf('\\sigma (%s)', r.unitloadF));
             view(r.Az, r.EI);
             title(plotTitle);
             

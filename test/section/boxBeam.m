@@ -2,7 +2,7 @@
 boxbeam = SectionDesigner('Viga cuadrada compuesta');
 
 % Genera los materiales
-steel = ElastoplasticSteel('AceroA36', 294.31, 200894.198, 1120.531847, 0.246197);
+steel = ElastoplasticSteel('Acero A36', 294.31, 200894.198, 1120.531847, 0.246197);
 steel.setColor([0, 0, 0.5]);
 
 concrete = HognestadConcrete('Hognestad', 30, 0.0025);
@@ -29,6 +29,6 @@ phiy = linspace(0, 0, 500)';
 analysis.calc_e0M(boxbeam, p, phix, phiy);
 
 % N*mm -> kN*m
-analysis.plot_e0M('plot', 'mphix', 'factor', 1e-6, 'm', 'x', ...
+analysis.plot_e0M('plot', 'mphix', 'm', 'x', ...
     'sapfile', sprintf('test/section/mcurv-sap2000/boxBeam%d.txt', model), ...
     'sapfactorPhi', 1e-3, 'sapcolumnPhi', 10, 'sapcolumnM', 11);
