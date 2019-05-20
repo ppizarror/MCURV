@@ -59,7 +59,7 @@ classdef SectionAnalysis < BaseModel
             %
             % Parametros:
             %   section     Objeto de la seccion de analisis
-            %   p           Arreglo de cargas
+            %   P           Arreglo de cargas
             %   phix        Vector de curvatura en x
             %   phiy        Vector de curvatura en y
             %
@@ -111,6 +111,8 @@ classdef SectionAnalysis < BaseModel
             if r.ppos(1) == px && r.ppos(2) == py
                 pcentroid = ' ubicado en centroide';
             end
+            
+            fprintf('\tNumero de incrementos: %d\n', length(P));
             
             fprintf('\tCarga externa posicion: (%.2f,%.2f)%s\n', ...
                 r.ppos(1), r.ppos(2), pcentroid);
@@ -545,23 +547,27 @@ classdef SectionAnalysis < BaseModel
             movegui(plt, 'center');
             set(gcf, 'name', 'Momento curvatura');
             hold on;
+            leg = {};
+            
+            % Grafica las curvas
             if strcmp(r.m, 'all')
                 plot(phi, mxInt, '-', 'LineWidth', 1.5);
                 plot(phi, myInt, '-', 'LineWidth', 1.5);
-                leg = {'M_x', 'M_y'};
+                leg{length(leg)+1} = 'M_x';
+                leg{length(leg)+1} = 'M_y';
                 mAxis = 'M'; % Eje del momento a mostrar en el titulo
             elseif strcmp(r.m, 'x')
                 plot(phi, mxInt, '-', 'LineWidth', 1.5);
-                leg = {'M_x'};
+                leg{length(leg)+1} = 'M_x';
                 mAxis = 'M_x';
             elseif strcmp(r.m, 'y')
                 plot(phi, myInt, '-', 'LineWidth', 1.5);
-                leg = {'M_y'};
+                leg{length(leg)+1} = 'M_y';
                 mAxis = 'M_y';
             elseif strcmp(r.m, 'T')
                 mtInt = sqrt(mxInt.^2+myInt.^2);
                 plot(phi, mtInt, '-', 'LineWidth', 1.5);
-                leg = {'M_T'};
+                leg{length(leg)+1} = 'M_T';
                 mAxis = 'M_T';
             else
                 error('Valor incorrecto parametro m: all,x,y,T');
@@ -648,7 +654,7 @@ classdef SectionAnalysis < BaseModel
                 set(gcf, 'name', 'Diferencia entre archivo y calculo');
                 hold on;
                 mDiffAbs = (mDiff ./ sapMint) .* 100;
-                mDiffAbs = medfilt1(mDiffAbs, 3);
+                mDiffAbs = medfilt1(mDiffAbs, r.medfiltN);
                 plot(phi, mDiffAbs, 'k-', 'LineWidth', 1.5);
                 grid on;
                 grid minor;
