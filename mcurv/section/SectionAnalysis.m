@@ -53,7 +53,7 @@ classdef SectionAnalysis < BaseModel
             
         end % SectionAnalysis constructor
         
-        function [defTotal, mxInt, myInt, pInt, err, iters] = calc_e0M(obj, section, p, phix, phiy, ppos)
+        function [defTotal, mxInt, myInt, pInt, err, iters, jacIter] = calc_e0M(obj, section, p, phix, phiy, ppos)
             % calc_e0M: Calcula e0 y M dado un arreglo de cargas y
             % curvaturas
             %
@@ -134,6 +134,7 @@ classdef SectionAnalysis < BaseModel
             
             % Almacena desde que i-incremento se usa el primer jacobiano
             usar1JACNITER = 1;
+            lastjac = 1;
             
             % Aplicacion de carga
             for i = 1:n
@@ -194,7 +195,11 @@ classdef SectionAnalysis < BaseModel
                 else % Itera con la primera pendiente
                     
                     % Asigna el primer jacobiano
-                    jacIter(i, 1) = jacIter(1, 1);
+                    if i>1
+                        jacIter(i, 1) = jacIter(i-1, lastjac);
+                    else
+                        jacIter(i, 1) = jacIter(1, 1);
+                    end
                     
                     for j = 1:(obj.maxiter - 1)
                         
@@ -226,6 +231,7 @@ classdef SectionAnalysis < BaseModel
                             jacIter(i, j) = 0.5 * jacIter(i, j-1);
                             j = j - 1; %#ok<FXSET>
                         end
+                        lastjac = j;
                         
                     end
                     
@@ -407,7 +413,19 @@ classdef SectionAnalysis < BaseModel
                 sapPhi = sapF(:, r.sapcolumnPhi) .* r.sapfactorPhi;
                 sapM = sapF(:, r.sapcolumnM) .* r.sapfactorM;
                 sapMint = interp1(sapPhi, sapM, phi, 'linear', 'extrap');
-                plot(phi, sapMint, '-', 'LineWidth', 1.5);
+                if max(sapPhi) < max(phi)
+                    for i=1:length(phi)
+                        if phi(i) >= max(sapPhi)
+                            phiF = phi(1:i);
+                            sapMintF = sapMint(1:i);
+                            break;
+                        end
+                    end
+                else
+                    phiF = phi;
+                    sapMintF = sapMint;
+                end
+                plot(phiF, sapMintF, '-', 'LineWidth', 1.5);
                 if ~strcmp(r.saplegend, '')
                     leg{length(leg)+1} = r.saplegend;
                 end
