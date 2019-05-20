@@ -112,7 +112,7 @@ if showSap
         'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
         'sapdiff', true);
 else
-    analysis.plot_e0M('plot', plotPhi, 'factor', 1e-6, 'm', 'y');
+    analysis.plot_e0M('plot', plotPhi, 'factor', 1e-6, 'm', 'y'); %#ok<*UNRCH>
 end
 wallt.plotStress(e0, phix, phiy, 'i', 2, 'mfactor', 1e-6, 'pfactor', 1e-3);
 % analysis.plot_lastIter();

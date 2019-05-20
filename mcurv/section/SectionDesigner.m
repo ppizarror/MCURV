@@ -106,6 +106,8 @@ classdef SectionDesigner < BaseModel
             p.addOptional('translatex', 0);
             p.addOptional('translatey', 0);
             p.addOptional('transparency', 0.6);
+            p.addOptional('xco', xc);
+            p.addOptional('yco', yc);
             parse(p, varargin{:});
             r = p.Results;
             r.transparency = 1 - r.transparency;
@@ -126,6 +128,17 @@ classdef SectionDesigner < BaseModel
             rotBox = abs([b, h]*tang); % Caja rotada
             prot = [xc, yc] * tang; % Punto rotado
             
+            dc = [r.xco, r.yco] - [r.xco, r.yco] * tang; % Distancia al centro real
+            tx = tx + dc(1);
+            ty = ty + dc(2);
+            
+            % Suma el centro a la rotacion
+            prot = prot + [tx, ty];
+            
+            % Crea el vector
+            txV = [tx, tx, tx, tx];
+            tyV = [ty, ty, ty, ty];
+            
             xpatch = [(xc - b / 2), (xc + b / 2), (xc + b / 2), (xc - b / 2)];
             ypatch = [(yc - h / 2), (yc - h / 2), (yc + h / 2), (yc + h / 2)];
             
@@ -135,8 +148,8 @@ classdef SectionDesigner < BaseModel
             zpatchR = zeros(1, 4);
             
             % Suma la translacion
-            xpatchR = xpatchR + [tx, tx, tx, tx];
-            ypatchR = ypatchR + [ty, ty, ty, ty];
+            xpatchR = xpatchR + txV;
+            ypatchR = ypatchR + tyV;
             
             obj.contTotal = obj.contTotal + 1;
             obj.contMat{obj.contTotal} = material;
@@ -164,16 +177,16 @@ classdef SectionDesigner < BaseModel
                 x = -b / 2 + dx / 2;
                 for j = 1:nx
                     rot = [xc + x, yc + y] * tang;
-                    px(k) = rot(1) + tx;
-                    py(k) = rot(2) + ty;
+                    px(k) = rot(1);
+                    py(k) = rot(2);
                     
                     % Crea el parche de la discretizacion
                     xpatch = [(xc + x - dx / 2), (xc + x + dx / 2), (xc + x + dx / 2), (xc + x - dx / 2)];
                     ypatch = [(yc + y - dy / 2), (yc + y - dy / 2), (yc + y + dy / 2), (yc + y + dy / 2)];
                     
                     % Rota los puntos del parche
-                    xpatchD{k} = cos(alpha) * xpatch - sin(alpha) * ypatch;
-                    ypatchD{k} = sin(alpha) * xpatch + cos(alpha) * ypatch;
+                    xpatchD{k} = cos(alpha) * xpatch - sin(alpha) * ypatch + txV;
+                    ypatchD{k} = sin(alpha) * xpatch + cos(alpha) * ypatch + tyV;
                     x = x + dx;
                     k = k + 1;
                 end
@@ -243,7 +256,7 @@ classdef SectionDesigner < BaseModel
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'addDiscreteSquare(xc,yc,L,n,material,varargin)');
             end
-            obj.addDiscreteRect(xc, yc, L, L, n, n, material, varargin{:});
+            obj.addDiscreteRect(xc, yc, L, L, n, n, material, varargin{:}, 'xco', xc, 'yco', yc);
             
         end % addDiscreteSquare function
         
@@ -286,9 +299,9 @@ classdef SectionDesigner < BaseModel
             nxw = max(1, ceil(nx/bf*tw));
             
             % Agrega las alas
-            obj.addDiscreteRect(xc, yc+h/2-ts/2, bs, ts, nxts, nyts, material, varargin{:});
-            obj.addDiscreteRect(xc, yc-h/2+ti/2, bi, ti, nxti, nyti, material, varargin{:});
-            obj.addDiscreteRect(xc, yc, tw, h-ti-ts, nxw, nyw, material, varargin{:});
+            obj.addDiscreteRect(xc, yc+h/2-ts/2, bs, ts, nxts, nyts, material, varargin{:}, 'xco', xc, 'yco', yc);
+            obj.addDiscreteRect(xc, yc-h/2+ti/2, bi, ti, nxti, nyti, material, varargin{:}, 'xco', xc, 'yco', yc);
+            obj.addDiscreteRect(xc, yc, tw, h-ti-ts, nxw, nyw, material, varargin{:}, 'xco', xc, 'yco', yc);
             
         end % addDiscreteISection function
         
@@ -355,9 +368,9 @@ classdef SectionDesigner < BaseModel
             nwx = max(1, nx/b*tw);
             
             % Agrega elementos
-            obj.addDiscreteRect(xc-b/2+tw/2, yc, tw, h-2*tf, nwx, nwy, material, varargin{:});
-            obj.addDiscreteRect(xc, yc-h/2+tf/2, b, tf, nx, nfy, material, varargin{:});
-            obj.addDiscreteRect(xc, yc+h/2-tf/2, b, tf, nx, nfy, material, varargin{:});
+            obj.addDiscreteRect(xc-b/2+tw/2, yc, tw, h-2*tf, nwx, nwy, material, varargin{:}, 'xco', xc, 'yco', yc);
+            obj.addDiscreteRect(xc, yc-h/2+tf/2, b, tf, nx, nfy, material, varargin{:}, 'xco', xc, 'yco', yc);
+            obj.addDiscreteRect(xc, yc+h/2-tf/2, b, tf, nx, nfy, material, varargin{:}, 'xco', xc, 'yco', yc);
             
         end % addDiscreteChannel function
         
@@ -398,10 +411,10 @@ classdef SectionDesigner < BaseModel
             ntey = min(ny, nte);
             
             % Agrega elementos
-            obj.addDiscreteRect(xc-b/2+t/2, yc, t, h-2*t, ntex, ny-2*nte, material, varargin{:});
-            obj.addDiscreteRect(xc+b/2-t/2, yc, t, h-2*t, ntex, ny-2*nte, material, varargin{:});
-            obj.addDiscreteRect(xc, yc+h/2-t/2, b, t, nx, ntey, material, varargin{:});
-            obj.addDiscreteRect(xc, yc-h/2+t/2, b, t, nx, ntey, material, varargin{:});
+            obj.addDiscreteRect(xc-b/2+t/2, yc, t, h-2*t, ntex, ny-2*nte, material, varargin{:}, 'xco', xc, 'yco', yc);
+            obj.addDiscreteRect(xc+b/2-t/2, yc, t, h-2*t, ntex, ny-2*nte, material, varargin{:}, 'xco', xc, 'yco', yc);
+            obj.addDiscreteRect(xc, yc+h/2-t/2, b, t, nx, ntey, material, varargin{:}, 'xco', xc, 'yco', yc);
+            obj.addDiscreteRect(xc, yc-h/2+t/2, b, t, nx, ntey, material, varargin{:}, 'xco', xc, 'yco', yc);
             
         end % addDiscreteBoxChannel function
         
@@ -432,6 +445,24 @@ classdef SectionDesigner < BaseModel
             obj.addDiscreteBoxChannel(xc, yc, L, L, t, n, n, material, varargin{:});
             
         end % addDiscreteSquareChannel function
+        
+        function addDiscreteTubular(obj, xc, yc, ri, rf, n, material, varargin)
+            % addDiscreteTubular: Crea seccion tubular
+            %
+            % Parametros requeridos
+            %   xc              Posicion del centro del area en x
+            %   yc              Posicion del centro del area en y
+            %   ri              Radio interior
+            %   re              Radio exterior
+            %   n               Discretizacion
+            %   material        Material de la seccion
+            
+            if nargin < 5
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addFiniteArea(xc,yc,area,material,varargin)');
+            end
+            
+        end % addDiscreteTubular function
         
         function addFiniteArea(obj, xc, yc, area, material, varargin)
             % addFiniteArea: Agrega un area finita
@@ -739,12 +770,12 @@ classdef SectionDesigner < BaseModel
                     px = g{11};
                     py = g{12};
                     nt = g{13};
-                    dx = g{14};
-                    dy = g{15};
+                    dx = abs(g{14}) * 0.5;
+                    dy = abs(g{15}) * 0.5;
                     mat = obj.contMat{i};
                     
-                    dxm = min(dxm, dx);
-                    dym = min(dym, dy);
+                    dxm = abs(min(dxm, dx));
+                    dym = abs(min(dym, dy));
                     
                     mallaX = zeros(nt, 1);
                     mallaY = zeros(nt, 1);
