@@ -762,21 +762,24 @@ classdef SectionDesigner < BaseModel
             % Escribe los ejes
             if r.axis
                 
-                % Eje x
+                % Largo ejes
                 lx = r.axisSize * sx;
+                ly = r.axisSize * sy;
+                la = max(lx, ly);
+                
+                % Eje x
                 p1 = [gx, gy];
-                p2 = [gx + lx, gy];
+                p2 = [gx + la, gy];
                 dp = p2 - p1;
                 quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [1, 0, 0]);
-                text(p2(1)-0.1*lx, p2(2)+0.15*lx, 'x', 'Color', [1, 0, 0]);
+                text(p2(1)-0.1*la, p2(2)+0.15*la, 'x', 'Color', [1, 0, 0]);
                 
                 % Eje y
-                ly = r.axisSize * sy;
                 p1 = [gx, gy];
-                p2 = [gx, gy + ly];
+                p2 = [gx, gy + la];
                 dp = p2 - p1;
                 quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [0, 1, 0]);
-                text(p2(1)+0.1*ly, p2(2), 'y', 'Color', [0, 1, 0]);
+                text(p2(1)+0.1*la, p2(2), 'y', 'Color', [0, 1, 0]);
                 
             end
             
@@ -819,11 +822,13 @@ classdef SectionDesigner < BaseModel
             
             p = inputParser;
             p.KeepUnmatched = true;
+            p.addOptional('angle', 0);
             p.addOptional('axisequal', false);
             p.addOptional('Az', 0)
             p.addOptional('EI', 90);
             p.addOptional('i', 1);
             p.addOptional('limMargin', 0);
+            p.addOptional('mode', 'xy'); % Interno, 'xy','a'
             p.addOptional('mfactor', 1);
             p.addOptional('munits', 'kN*m');
             p.addOptional('normaspect', false);
@@ -851,6 +856,24 @@ classdef SectionDesigner < BaseModel
                 phix = phix(r.i);
                 phiy = phiy(r.i);
             end
+            
+            % Aplica limites
+            if e0 < 1e-20
+                e0 = 0;
+            end
+            if phix < 1e-20
+                phix = 0;
+            end
+            if phiy < 1e-20
+                phiy = 0;
+            end
+            
+            if strcmp(r.mode, 'a')
+                fprintf('\tModo: Angulo (%.1f°)\n', r.angle);
+            else
+                fprintf('\tModo: xy\n');
+            end
+            
             fprintf('\tDeformaciones:\n');
             fprintf('\t\te0: %e\n', e0);
             fprintf('\t\tphix: %e\n', phix);
@@ -866,9 +889,14 @@ classdef SectionDesigner < BaseModel
             fprintf('\t\tMy: %.2f %s\n', my*r.mfactor, r.munits);
             
             % Genera el titulo
-            plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
-                sprintf('e_0: %e  /  \\phi_x: %e  /  \\phi_y: %e', e0, phix, phiy)};
-            
+            if strcmp(r.mode, 'a')
+                plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
+                    sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
+            else
+                plotTitle = {sprintf('%s  -  Angulo %.1f°  -  Esfuerzos i=%d', obj.getName(), r.angle, r.i), ...
+                    sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
+            end
+                
             if length(e0) ~= 1
                 error('Solo se puede graficar un punto de e0,phix/y, no un vector');
             end

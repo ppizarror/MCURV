@@ -93,9 +93,7 @@ elseif strcmp(caseNum, '4.2')
 else
     error('Caso invalido');
 end
-ppos = [0, 0]; % Ubicado en h/2, o sea, al centro del muro
-phix = linspace(0, curv, increments) .* cos(curvang/180*pi());
-phiy = linspace(0, curv, increments) .* sin(curvang/180*pi());
+phi = linspace(0, curv, increments);
 
 wallt.setName(sprintf('Muro T - Caso %s', caseNum));
 wallt.disp();
@@ -103,16 +101,16 @@ wallt.plot('showdisc', true);
 
 % Ejecuta el analisis
 analysis = SectionAnalysis('Analisis', 1000, 0.01, 'showprogress', true);
-e0 = analysis.calc_e0M(wallt, p, phix, phiy, ppos);
+analysis.calc_e0M_angle(wallt, p, phi, curvang, 'ppos', [0, 0]);
 
 % Grafica, N*mm -> kN*m
 if showSap
-    analysis.plot_e0M('plot', 'mphiy', 'factor', 1e-6, 'm', 'y', ...
+    analysis.plot_e0M('plot', 'mphi', 'factor', 1e-6, 'm', 'T', ...
         'sapfile', sprintf('test/section/mcurv-sap2000/wallT%s_%d.txt', caseNum, curvang), ...
         'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
         'sapdiff', true);
 else
-    analysis.plot_e0M('plot', plotPhi, 'factor', 1e-6, 'm', 'y'); %#ok<*UNRCH>
+    analysis.plot_e0M('plot', 'mphi', 'factor', 1e-6, 'm', 'T'); %#ok<*UNRCH>
 end
-wallt.plotStress(e0, phix, phiy, 'i', 2, 'mfactor', 1e-6, 'pfactor', 1e-3);
+analysis.plotStress(2, 'mfactor', 1e-6, 'pfactor', 1e-3);
 % analysis.plot_lastIter();
