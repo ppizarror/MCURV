@@ -113,6 +113,8 @@ classdef SectionAnalysis < BaseModel
             end
             
             fprintf('\tNumero de incrementos: %d\n', length(P));
+            fprintf('\tNumero de maximo de iteraciones: %d\n', obj.maxiter);
+            fprintf('\tTolerancia maxima: %.3e\n', obj.tol);
             
             fprintf('\tCarga externa posicion: (%.2f,%.2f)%s\n', ...
                 r.ppos(1), r.ppos(2), pcentroid);
@@ -482,14 +484,12 @@ classdef SectionAnalysis < BaseModel
             %   axisequal       Aplica mismo factores a los ejes
             %   Az              Angulo azimutal
             %   EI              Elevacion del grafico
+            %   factorM         Factor momento
+            %   factorP         Factor de carga axial
             %   i               Numero de punto de evaluacion
             %   limMargin       Incrementa el margen
-            %   mfactor         Factor momento
-            %   munits          Unidad de momento
             %   normaspect      Normaliza el aspecto
-            %   pfactor         Factor de carga axial
             %   plot            Tipo de grafico (cont,sing)
-            %   punits          Unidad de carga axial
             %   showgrid        Muestra la grilla de puntos
             %   showmesh        Muesra el meshado de la geometria
             %   unitlength      Unidad de largo
@@ -522,6 +522,56 @@ classdef SectionAnalysis < BaseModel
             end
             
         end % plotStress function
+        
+        function plt = plotStrain(obj, i, varargin)
+            % plotStrain: Grafica la deformacion de la seccion ante un punto
+            % especifico i
+            %
+            % Parametros requeridos:
+            %   i               Punto de evaluacion
+            %
+            % Parametros iniciales:
+            %   axisequal       Aplica mismo factores a los ejes
+            %   Az              Angulo azimutal
+            %   EI              Elevacion del grafico
+            %   factorM         Factor momento
+            %   factorP         Factor de carga axial
+            %   i               Numero de punto de evaluacion
+            %   limMargin       Incrementa el margen
+            %   normaspect      Normaliza el aspecto
+            %   plot            Tipo de grafico (cont,sing)
+            %   showgrid        Muestra la grilla de puntos
+            %   showmesh        Muesra el meshado de la geometria
+            %   unitlength      Unidad de largo
+            %   unitloadF       Unidad de tension
+            %   unitloadM       Unidad de momento
+            %   unitloadP       Unidad de carga axial
+            
+            if isempty(obj.lastsole0p)
+                error('Analisis e0M no ha sido ejecutado');
+            end
+            
+            if nargin < 1
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'plotStress(i,varargin)');
+            end
+            
+            phix = obj.lastsole0p{3};
+            phiy = obj.lastsole0p{4};
+            e0 = obj.lastsole0p{13};
+            section = obj.lastsole0p{8};
+            mode = obj.lastsole0p{10};
+            angle = obj.lastsole0p{11};
+            
+            if strcmp(mode, 'angle')
+                plt = section.plotStrain(e0, phix, phiy, varargin{:}, 'i', i, ...
+                    'angle', angle, 'mode', 'a');
+            else
+                plt = section.plotStrain(e0, phix, phiy, varargin{:}, 'i', i, ...
+                    'mode', 'xy');
+            end
+            
+        end % plotStrain function
         
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola

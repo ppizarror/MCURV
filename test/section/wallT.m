@@ -11,16 +11,19 @@ steel = ManderSteel('Acero', 420, 200000, 600, 200000/20, 0.01, 0.1, 0.3);
 steel.setColor([1, 0, 0]);
 
 concreteA.disp();
-concreteA.getStressDeformation('emin', -2e-3, 'emax', 5e-3, ...
+concreteA.getStressDeformation('emin', -1e-3, 'emax', 5e-3, ...
     'file', 'test/section/mat/concreteA.txt');
+% concreteA.plot('emin', -1e-3, 'emax', 5e-3);
 
 concreteB.disp();
 concreteB.getStressDeformation('emin', -5e-4, 'emax', 2.1e-2, ...
     'file', 'test/section/mat/concreteB.txt');
+% concreteB.plot('emin', -5e-4, 'emax', 2.1e-2);
 
 steel.disp();
 steel.getStressDeformation('emin', -2.5e-1, 'emax', 3.1e-1, ...
     'file', 'test/section/mat/steel.txt');
+% steel.plot('emin', -2.5e-1, 'emax', 3.1e-1);
 
 % Agrega los elementos
 caseNum = '1';

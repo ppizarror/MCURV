@@ -7,6 +7,7 @@ ashapes.addDiscreteHSection(100, 100, 300, 200, 20, 6, 20, 50, steel, 'rotation'
 ashapes.addDiscreteChannel(100, -100, 25, 20, 5, 5, 10, 10, steel, 'rotation', 45);
 ashapes.addDiscreteSquareChannel(-100, -100, 50, 5, 10, steel, 'rotation', 30);
 ashapes.addDiscreteSquare(0, 0, 40, 10, steel, 'rotation', 10);
+ashapes.addDiscreteTubular(250, -50, 25, 50, 30, steel);
 
 % Grafica
 ashapes.disp();

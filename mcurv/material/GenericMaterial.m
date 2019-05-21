@@ -96,7 +96,7 @@ classdef GenericMaterial < BaseModel
                 plotLegend = 'Esfuerzo-deformacion';
             elseif strcmp(r.plotType, 'elastic')
                 [~, fx] = obj.eval(ex);
-                plotTitle = sprintf('%s - Modulo elastico', obj.getName());
+                plotTitle = sprintf('%s - Modulo elastico tangente', obj.getName());
                 yLabel = sprintf('E - Modulo elastico tangente (%s)', r.units);
                 plotLegend = 'Modulo Elastico-deformacion';
             else

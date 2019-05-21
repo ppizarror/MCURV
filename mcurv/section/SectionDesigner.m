@@ -801,14 +801,12 @@ classdef SectionDesigner < BaseModel
             %   axisequal       Aplica mismo factores a los ejes
             %   Az              Angulo azimutal
             %   EI              Elevacion del grafico
+            %   factorM         Factor momento
+            %   factorP         Factor de carga axial
             %   i               Numero de punto de evaluacion
             %   limMargin       Incrementa el margen
-            %   mfactor         Factor momento
-            %   munits          Unidad de momento
             %   normaspect      Normaliza el aspecto
-            %   pfactor         Factor de carga axial
             %   plot            Tipo de grafico (cont,sing)
-            %   punits          Unidad de carga axial
             %   showgrid        Muestra la grilla de puntos
             %   showmesh        Muesra el meshado de la geometria
             %   unitlength      Unidad de largo
@@ -816,252 +814,39 @@ classdef SectionDesigner < BaseModel
             %   unitloadM       Unidad de momento
             %   unitloadP       Unidad de carga axial
             
-            % Verificacion inicial
-            if length(e0) ~= length(phix) || length(e0) ~= length(phiy)
-                error('e0 y phix/y deben tener igual largo');
-            end
-            obj.updateProps();
-            
-            p = inputParser;
-            p.KeepUnmatched = true;
-            p.addOptional('angle', 0);
-            p.addOptional('axisequal', false);
-            p.addOptional('Az', 0)
-            p.addOptional('EI', 90);
-            p.addOptional('i', 1);
-            p.addOptional('limMargin', 0);
-            p.addOptional('mode', 'xy'); % Interno, 'xy','a'
-            p.addOptional('factorM', 1e-6); % N*mm -> kN*m
-            p.addOptional('normaspect', false);
-            p.addOptional('factorP', 1e-3); % N -> kN
-            p.addOptional('plot', 'cont');
-            p.addOptional('showgrid', true);
-            p.addOptional('showmesh', false);
-            p.addOptional('unitlength', 'mm');
-            p.addOptional('unitloadF', 'MPa');
-            p.addOptional('unitloadM', 'kN*m');
-            p.addOptional('unitloadP', 'kN');
-            parse(p, varargin{:});
-            r = p.Results;
-            
-            if ~(strcmp(r.plot, 'cont') || strcmp(r.plot, 'sing'))
-                error('Errot tipo de grafico, valores posibles: %s', ...
-                    'cont, sing');
-            end
-            
-            fprintf('Generando grafico esfuerzos:\n');
-            fprintf('\tTipo: %s\n', r.plot);
-            
-            r.i = ceil(r.i);
-            if r.i > 0
-                if length(e0) >= r.i
-                    e0 = e0(r.i);
-                    phix = phix(r.i);
-                    phiy = phiy(r.i);
-                else
-                    error('El punto de evaluacion i=%d excede el largo del vector de soluciones (%d)', ...
-                        r.i, length(e0));
-                end
-            end
-            
-            % Aplica limites
-            if abs(e0) < 1e-20
-                e0 = 0;
-            end
-            if abs(phix) < 1e-20
-                phix = 0;
-            end
-            if abs(phiy) < 1e-20
-                phiy = 0;
-            end
-            
-            if strcmp(r.mode, 'a')
-                fprintf('\tModo: Angulo (%.1f°)\n', r.angle);
-            else
-                fprintf('\tModo: xy\n');
-            end
-            
-            fprintf('\tDeformaciones:\n');
-            fprintf('\t\te0: %e (-)\n', e0);
-            fprintf('\t\tphix: %e (1/%s)\n', phix, r.unitlength);
-            fprintf('\t\tphiy: %e (1/%s)\n', phiy, r.unitlength);
-            
-            % Calcula cargas
-            p = obj.calcP(e0, phix, phiy);
-            mx = obj.calcMx(e0, phix, phiy);
-            my = obj.calcMy(e0, phix, phiy);
-            fprintf('\tCargas:\n');
-            fprintf('\t\tP axial: %.2f %s\n', p*r.factorP, r.unitloadP);
-            fprintf('\t\tMx: %.2f %s\n', mx*r.factorM, r.unitloadM);
-            fprintf('\t\tMy: %.2f %s\n', my*r.factorM, r.unitloadM);
-            
-            % Genera el titulo
-            if strcmp(r.mode, 'xy')
-                plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
-                    sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
-            else
-                plotTitle = {sprintf('%s  -  Angulo %.1f  -  Esfuerzos i=%d', obj.getName(), r.angle, r.i), ...
-                    sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
-            end
-            
-            if length(e0) ~= 1
-                error('Solo se puede graficar un punto de e0,phix/y, no un vector');
-            end
-            
-            % Genera la figura
-            plt = figure();
-            movegui(plt, 'center');
-            set(gcf, 'name', 'Esfuerzos');
-            hold on;
-            if r.showgrid
-                grid on;
-                grid minor;
-            end
-            if r.axisequal
-                axis equal;
-            end
-            
-            % Crea funcion deformacion
-            eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
-            fmeshes = {};
-            
-            % Mallado menor
-            dxm = Inf;
-            dym = Inf;
-            
-            % Genera el mallado de cada area continua
-            if strcmp(r.plot, 'cont')
-                for i = 1:obj.contTotal
-                    g = obj.contGeom{i};
-                    px = g{11};
-                    py = g{12};
-                    nt = g{13};
-                    dx = abs(g{14}) * 0.5;
-                    dy = abs(g{15}) * 0.5;
-                    mat = obj.contMat{i};
-                    
-                    dxm = abs(min(dxm, dx));
-                    dym = abs(min(dym, dy));
-                    
-                    mallaX = zeros(nt, 1);
-                    mallaY = zeros(nt, 1);
-                    vecF = zeros(nt, 1);
-                    
-                    for j = 1:nt
-                        mallaX(j) = px(j);
-                        mallaY(j) = py(j);
-                        [f, ~] = mat.eval(eps(px(j), py(j)));
-                        vecF(j) = f;
-                    end
-                    
-                    [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
-                    vq = griddata(mallaX, mallaY, vecF, xq, yq);
-                    mesh(xq, yq, vq);
-                    surf(xq, yq, vq);
-                    
-                    % Grafica la linea en cero
-                    if r.showmesh
-                        [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
-                        vq = griddata(mallaX, mallaY, vecF.*0, xq, yq);
-                        hold on;
-                        fmesh = mesh(xq, yq, vq);
-                        % alpha(fmesh1, 0.7);
-                        set(fmesh, 'FaceAlpha', 0);
-                        fmeshes{i} = fmesh; %#ok<*AGROW>
-                    end
-                end
-            end
-            
-            % Genera el mallado de cada area singular
-            if strcmp(r.plot, 'sing')
-                
-                % Grafica el borde de los continuos
-                for i = 1:obj.contTotal
-                    g = obj.contGeom{i};
-                    patchx = g{17};
-                    patchy = g{18};
-                    patchz = g{19};
-                    patch(patchx, patchy, patchz, ...
-                        'FaceColor', obj.contParams{i}.color, ...
-                        'EdgeColor', [0, 0, 0], ...
-                        'LineWidth', obj.contParams{i}.linewidth*0.5, ...
-                        'FaceAlpha', 0.1, 'EdgeAlpha', 1);
-                end
-                
-                % Grafica los singulares
-                for i = 1:obj.singTotal
-                    g = obj.singGeom{i};
-                    x = g{1};
-                    y = g{2};
-                    px = g{6};
-                    py = g{7};
-                    nt = 4;
-                    dd = g{8};
-                    mat = obj.singMat{i};
-                    
-                    mallaX = zeros(nt, 1);
-                    mallaY = zeros(nt, 1);
-                    vecF = zeros(nt, 1);
-                    
-                    for j = 1:nt
-                        mallaX(j) = px(j);
-                        mallaY(j) = py(j);
-                        % A diferencia del continuo, el discreto se evalua
-                        % solo en el centro del area
-                        [f, ~] = mat.eval(eps(x, y));
-                        vecF(j) = f;
-                    end
-                    
-                    [xq, yq] = meshgrid(min(mallaX):dd:max(mallaX), min(mallaY):dd:max(mallaY));
-                    vq = griddata(mallaX, mallaY, vecF, xq, yq);
-                    m = mesh(xq, yq, vq);
-                    surf(xq, yq, vq);
-                    % set(m, 'EdgeColor', [0.5, 0.5, 0.5]);
-                    set(m, 'EdgeAlpha', 0);
-                end
-            end
-            
-            if r.showmesh && strcmp(r.plot, 'cont')
-                for i = 1:1:obj.contTotal
-                    set(fmeshes{i}, 'EdgeColor', [0.5, 0.5, 0.5]);
-                    set(fmeshes{i}, 'EdgeAlpha', .50);
-                end
-            end
-            
-            % Cambia el esquema de colores
-            colormap(flipud(jet));
-            
-            % Agrega el colorbar
-            h = colorbar('Location', 'eastoutside');
-            t = get(h, 'Limits');
-            T = linspace(t(1), t(2), 5);
-            set(h, 'Ticks', T);
-            TL = arrayfun(@(x) sprintf('%.2f', x), T, 'un', 0);
-            set(h, 'TickLabels', TL);
-            shading interp;
-            
-            % Cambia los label
-            xlabel(sprintf('x (%s)', r.unitlength));
-            ylabel(sprintf('y (%s)', r.unitlength));
-            ylabel(h, sprintf('\\sigma (%s)', r.unitloadF));
-            view(r.Az, r.EI);
-            title(plotTitle);
-            
-            % Modifica los ejes para dejar la misma escala
-            plotLimsMargin(r.limMargin);
-            
-            % Aplica factor de escala en x/y
-            if r.normaspect && ~r.axisequal
-                h = get(gca, 'DataAspectRatio');
-                [sx, sy] = obj.getSize();
-                set(gca, 'DataAspectRatio', [h(1), h(2) * sx / sy, h(3)]);
-            end
-            
-            % Actualiza el grafico
-            drawnow();
-            dispMCURV();
+            plt = obj.plotStrainStress(e0, phix, phiy, varargin{:}, 'type', 'stress');
             
         end % plotStress function
+        
+        function plt = plotStrain(obj, e0, phix, phiy, varargin)
+            % plotStrain: Grafica el valor de la deformacion para cada
+            % punto (x,y) del elemento
+            %
+            % Parametros requeridos:
+            %   e0          Valor de la deformacion con respecto al centroide
+            %   phix        Curvatura en x
+            %   phiy        Curvatura en y
+            %
+            % Parametros iniciales:
+            %   axisequal       Aplica mismo factores a los ejes
+            %   Az              Angulo azimutal
+            %   EI              Elevacion del grafico
+            %   factorM         Factor momento
+            %   factorP         Factor de carga axial
+            %   i               Numero de punto de evaluacion
+            %   limMargin       Incrementa el margen
+            %   normaspect      Normaliza el aspecto
+            %   plot            Tipo de grafico (cont,sing)
+            %   showgrid        Muestra la grilla de puntos
+            %   showmesh        Muesra el meshado de la geometria
+            %   unitlength      Unidad de largo
+            %   unitloadF       Unidad de tension
+            %   unitloadM       Unidad de momento
+            %   unitloadP       Unidad de carga axial
+            
+            plt = obj.plotStrainStress(e0, phix, phiy, varargin{:}, 'type', 'strain');
+            
+        end % plotStrain function
         
         function [xi, yi] = getCentroid(obj)
             % getCentroid: Calcula el centroide
@@ -1415,5 +1200,331 @@ classdef SectionDesigner < BaseModel
         end % disp function
         
     end % public methods
+    
+    methods(Access = private)
+        
+        function plt = plotStrainStress(obj, e0, phix, phiy, varargin)
+            % plotStrainStress: Grafica el esfuerzo o la deformacion de la
+            % seccion
+            %
+            % Parametros requeridos:
+            %   e0          Valor de la deformacion con respecto al centroide
+            %   phix        Curvatura en x
+            %   phiy        Curvatura en y
+            %
+            % Parametros iniciales:
+            %   angle           Angulo de la curvatura (interno)
+            %   axisequal       Aplica mismo factores a los ejes
+            %   Az              Angulo azimutal
+            %   EI              Elevacion del grafico
+            %   factorM         Factor momento
+            %   factorP         Factor de carga axial
+            %   i               Numero de punto de evaluacion
+            %   limMargin       Incrementa el margen
+            %   normaspect      Normaliza el aspecto
+            %   plot            Tipo de grafico (cont,sing)
+            %   showgrid        Muestra la grilla de puntos
+            %   showmesh        Muesra el meshado de la geometria
+            %   type            Tipo de grafico (strain,stress)
+            %   unitlength      Unidad de largo
+            %   unitloadF       Unidad de tension
+            %   unitloadM       Unidad de momento
+            %   unitloadP       Unidad de carga axial
+            
+            % Verificacion inicial
+            if length(e0) ~= length(phix) || length(e0) ~= length(phiy)
+                error('e0 y phix/y deben tener igual largo');
+            end
+            obj.updateProps();
+            
+            p = inputParser;
+            p.KeepUnmatched = true;
+            p.addOptional('angle', 0);
+            p.addOptional('axisequal', false);
+            p.addOptional('Az', 0)
+            p.addOptional('EI', 90);
+            p.addOptional('factorM', 1e-6); % N*mm -> kN*m
+            p.addOptional('factorP', 1e-3); % N -> kN
+            p.addOptional('i', 1);
+            p.addOptional('limMargin', 0);
+            p.addOptional('mode', 'xy'); % Interno, 'xy','a'
+            p.addOptional('normaspect', false);
+            p.addOptional('plot', 'cont');
+            p.addOptional('showgrid', true);
+            p.addOptional('showmesh', false);
+            p.addOptional('type', 'stress');
+            p.addOptional('unitlength', 'mm');
+            p.addOptional('unitloadF', 'MPa');
+            p.addOptional('unitloadM', 'kN*m');
+            p.addOptional('unitloadP', 'kN');
+            parse(p, varargin{:});
+            r = p.Results;
+            
+            if ~(strcmp(r.plot, 'cont') || strcmp(r.plot, 'sing'))
+                error('Errot tipo de grafico, valores posibles: %s', ...
+                    'cont, sing');
+            end
+            
+            if strcmp(r.type, 'stress')
+                fprintf('Generando grafico esfuerzos:\n');
+            elseif strcmp(r.type, 'strain')
+                fprintf('Generando grafico deformaciones:\n');
+            else
+                error('Tipo de grafico desconocido, type:strain,stress');
+            end
+            fprintf('\tTipo: %s\n', r.plot);
+            
+            r.i = ceil(r.i);
+            if r.i > 0
+                if length(e0) >= r.i
+                    e0 = e0(r.i);
+                    phix = phix(r.i);
+                    phiy = phiy(r.i);
+                else
+                    error('El punto de evaluacion i=%d excede el largo del vector de soluciones (%d)', ...
+                        r.i, length(e0));
+                end
+            end
+            
+            % Aplica limites
+            if abs(e0) < 1e-20
+                e0 = 0;
+            end
+            if abs(phix) < 1e-20
+                phix = 0;
+            end
+            if abs(phiy) < 1e-20
+                phiy = 0;
+            end
+            
+            if strcmp(r.mode, 'a')
+                fprintf('\tModo: Angulo (%.1f)\n', r.angle);
+            else
+                fprintf('\tModo: xy\n');
+            end
+            
+            fprintf('\tDeformaciones:\n');
+            fprintf('\t\te0: %e (-)\n', e0);
+            fprintf('\t\tphix: %e (1/%s)\n', phix, r.unitlength);
+            fprintf('\t\tphiy: %e (1/%s)\n', phiy, r.unitlength);
+            
+            % Calcula cargas
+            p = obj.calcP(e0, phix, phiy);
+            mx = obj.calcMx(e0, phix, phiy);
+            my = obj.calcMy(e0, phix, phiy);
+            fprintf('\tCargas:\n');
+            fprintf('\t\tP axial: %.2f %s\n', p*r.factorP, r.unitloadP);
+            fprintf('\t\tMx: %.2f %s\n', mx*r.factorM, r.unitloadM);
+            fprintf('\t\tMy: %.2f %s\n', my*r.factorM, r.unitloadM);
+            
+            % Genera el titulo
+            if strcmp(r.type, 'stress')
+                if strcmp(r.mode, 'xy')
+                    plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
+                else
+                    plotTitle = {sprintf('%s  -  Angulo %.1f  -  Esfuerzos i=%d', obj.getName(), r.angle, r.i), ...
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
+                end
+            elseif strcmp(r.type, 'strain')
+                if strcmp(r.mode, 'xy')
+                    plotTitle = {sprintf('%s  -  Deformaciones i=%d', obj.getName(), r.i), ...
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
+                else
+                    plotTitle = {sprintf('%s  -  Angulo %.1f  -  Deformaciones i=%d', obj.getName(), r.angle, r.i), ...
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
+                end
+            end
+            
+            if length(e0) ~= 1
+                error('Solo se puede graficar un punto de e0,phix/y, no un vector');
+            end
+            
+            % Genera la figura
+            plt = figure();
+            movegui(plt, 'center');
+            if strcmp(r.type, 'stress')
+                set(gcf, 'name', 'Esfuerzos');
+            elseif strcmp(r.type, 'stress')
+                set(gcf, 'name', 'Deformaciones');
+            end
+            hold on;
+            if r.showgrid
+                grid on;
+                grid minor;
+            end
+            if r.axisequal
+                axis equal;
+            end
+            
+            % Crea funcion deformacion
+            eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+            fmeshes = {};
+            
+            % Mallado menor
+            dxm = Inf;
+            dym = Inf;
+            flim = [Inf, -Inf];
+            
+            % Genera el mallado de cada area continua
+            if strcmp(r.plot, 'cont')
+                for i = 1:obj.contTotal
+                    g = obj.contGeom{i};
+                    px = g{11};
+                    py = g{12};
+                    nt = g{13};
+                    dx = abs(g{14}) * 0.5;
+                    dy = abs(g{15}) * 0.5;
+                    mat = obj.contMat{i};
+                    
+                    dxm = abs(min(dxm, dx));
+                    dym = abs(min(dym, dy));
+                    
+                    mallaX = zeros(nt, 1);
+                    mallaY = zeros(nt, 1);
+                    vecF = zeros(nt, 1);
+                    
+                    for j = 1:nt
+                        mallaX(j) = px(j);
+                        mallaY(j) = py(j);
+                        if strcmp(r.type, 'stress')
+                            [f, ~] = mat.eval(eps(px(j), py(j)));
+                        elseif strcmp(r.type, 'strain')
+                            f = eps(px(j), py(j));
+                        end
+                        flim = [min(f, flim(1)), max(f, flim(2))];
+                        vecF(j) = f;
+                    end
+                    
+                    [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
+                    vq = griddata(mallaX, mallaY, vecF, xq, yq);
+                    mesh(xq, yq, vq);
+                    surf(xq, yq, vq);
+                    
+                    % Grafica la linea en cero
+                    if r.showmesh
+                        [xq, yq] = meshgrid(min(mallaX):dx:max(mallaX), min(mallaY):dy:max(mallaY));
+                        vq = griddata(mallaX, mallaY, vecF.*0, xq, yq);
+                        hold on;
+                        fmesh = mesh(xq, yq, vq);
+                        % alpha(fmesh1, 0.7);
+                        set(fmesh, 'FaceAlpha', 0);
+                        fmeshes{i} = fmesh; %#ok<*AGROW>
+                    end
+                end
+            end
+            
+            % Genera el mallado de cada area singular
+            if strcmp(r.plot, 'sing')
+                
+                % Grafica el borde de los continuos
+                for i = 1:obj.contTotal
+                    g = obj.contGeom{i};
+                    patchx = g{17};
+                    patchy = g{18};
+                    patchz = g{19};
+                    patch(patchx, patchy, patchz, ...
+                        'FaceColor', obj.contParams{i}.color, ...
+                        'EdgeColor', [0, 0, 0], ...
+                        'LineWidth', obj.contParams{i}.linewidth*0.5, ...
+                        'FaceAlpha', 0.1, 'EdgeAlpha', 1);
+                end
+                
+                % Grafica los singulares
+                for i = 1:obj.singTotal
+                    g = obj.singGeom{i};
+                    x = g{1};
+                    y = g{2};
+                    px = g{6};
+                    py = g{7};
+                    nt = 4;
+                    dd = g{8};
+                    mat = obj.singMat{i};
+                    
+                    mallaX = zeros(nt, 1);
+                    mallaY = zeros(nt, 1);
+                    vecF = zeros(nt, 1);
+                    
+                    for j = 1:nt
+                        mallaX(j) = px(j);
+                        mallaY(j) = py(j);
+                        % A diferencia del continuo, el discreto se evalua
+                        % solo en el centro del area
+                        if strcmp(r.type, 'stress')
+                            [f, ~] = mat.eval(eps(x, y));
+                        elseif strcmp(r.type, 'strain')
+                            f = eps(x, y);
+                        end
+                        flim = [min(f, flim(1)), max(f, flim(2))];
+                        vecF(j) = f;
+                    end
+                    
+                    [xq, yq] = meshgrid(min(mallaX):dd:max(mallaX), min(mallaY):dd:max(mallaY));
+                    vq = griddata(mallaX, mallaY, vecF, xq, yq);
+                    m = mesh(xq, yq, vq);
+                    surf(xq, yq, vq);
+                    % set(m, 'EdgeColor', [0.5, 0.5, 0.5]);
+                    set(m, 'EdgeAlpha', 0);
+                end
+            end
+            
+            if r.showmesh && strcmp(r.plot, 'cont')
+                for i = 1:1:obj.contTotal
+                    set(fmeshes{i}, 'EdgeColor', [0.5, 0.5, 0.5]);
+                    set(fmeshes{i}, 'EdgeAlpha', .50);
+                end
+            end
+            
+            % Cambia el esquema de colores
+            colormap(flipud(jet));
+            
+            % Agrega el colorbar
+            h = colorbar('Location', 'eastoutside');
+            if strcmp(r.type, 'stress')
+                t = get(h, 'Limits');
+                T = linspace(t(1), t(2), 5);
+                set(h, 'Ticks', T);
+                TL = arrayfun(@(x) sprintf('%.2f', x), T, 'un', 0);
+                set(h, 'TickLabels', TL);
+            end
+            shading interp;
+            
+            % Cambia los label
+            xlabel(sprintf('x (%s)', r.unitlength));
+            ylabel(sprintf('y (%s)', r.unitlength));
+            if strcmp(r.type, 'stress')
+                ylabel(h, sprintf('\\sigma (%s)', r.unitloadF));
+            elseif strcmp(r.type, 'strain')
+                ylabel(h, '\epsilon (-)');
+            end
+            view(r.Az, r.EI);
+            title(plotTitle);
+            
+            % Modifica los ejes para dejar la misma escala
+            plotLimsMargin(r.limMargin);
+            
+            % Aplica factor de escala en x/y
+            if r.normaspect && ~r.axisequal
+                h = get(gca, 'DataAspectRatio');
+                [sx, sy] = obj.getSize();
+                set(gca, 'DataAspectRatio', [h(1), h(2) * sx / sy, h(3)]);
+            end
+            
+            % Escribe informacion del analisis
+            if strcmp(r.type, 'stress')
+                fprintf('\tTensiones limite:\n\t\tMinimo: %f %s\n\t\tMaximo: %f %s\n', ...
+                    flim(1), r.unitloadF, flim(2), r.unitloadF);
+            elseif strcmp(r.type, 'strain')
+                fprintf('\tDeformaciones limite:\n\t\tMinimo: %f\n\t\tMaximo: %f\n', ...
+                    flim(1), flim(2));
+            end
+            
+            % Actualiza el grafico
+            drawnow();
+            dispMCURV();
+            
+        end
+        
+    end % private methods
     
 end % SectionDesigner class
