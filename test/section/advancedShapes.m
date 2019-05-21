@@ -8,6 +8,9 @@ ashapes.addDiscreteChannel(100, -100, 25, 20, 5, 5, 10, 10, steel, 'rotation', 4
 ashapes.addDiscreteSquareChannel(-100, -100, 50, 5, 10, steel, 'rotation', 30);
 ashapes.addDiscreteSquare(0, 0, 40, 10, steel, 'rotation', 10);
 ashapes.addDiscreteTubular(250, -50, 25, 50, 30, steel);
+ashapes.addDiscreteTSection(-150, 200, 50, 50, 10, 10, 5, 5, steel, 'rotation', 90);
+ashapes.addDiscreteLChannel(-75, 0, 80, 40, 5, 10, 10, steel);
+ashapes.addDiscreteRect(175, 150, 100, 25, 20, 10, steel, 'rotation', 0, 'translatex', -30);
 
 % Grafica
 ashapes.disp();

@@ -378,6 +378,7 @@ classdef SectionAnalysis < BaseModel
             %   vecphiLw        Ancho de linea
             %   vecphiSize      Porte puntos
             
+            tInit = cputime;
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('factorM', 1e-6); % Si se usan N*mm a kN-m
@@ -485,6 +486,7 @@ classdef SectionAnalysis < BaseModel
             
             % Finaliza el grafico
             drawnow();
+            fprintf('\tProceso finalizado en %.2f segundos\n', cputime-tInit);
             dispMCURV();
             
         end % plot_e0M function

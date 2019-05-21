@@ -26,7 +26,7 @@ steel.getStressDeformation('emin', -2.5e-1, 'emax', 3.1e-1, ...
 % steel.plot('emin', -2.5e-1, 'emax', 3.1e-1);
 
 % Agrega los elementos
-caseNum = '4.1';
+caseNum = '1';
 h = 5000;
 b = 4000;
 bw = 300;
@@ -137,7 +137,8 @@ phi = linspace(0, curv, increments);
 
 wallt.setName(sprintf('Muro T - Caso %s', caseNum));
 wallt.disp();
-wallt.plot('showdisc', true);
+wallt.plot('showdisc', true, 'legend', true);
+return;
 
 % Ejecuta el analisis
 analysis = SectionAnalysis('Analisis', 1000, 0.01, 'showprogress', true);

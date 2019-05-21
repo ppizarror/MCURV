@@ -303,8 +303,11 @@ classdef SectionDesigner < BaseModel
             if h <= 0
                 error('Altura del perfil invalida');
             end
-            if bi <= 0 || bs <= 0
+            if bi < 0 || bs <= 0
                 error('Ancho de alas invalidos');
+            end
+            if bi == 0
+                ti = 0;
             end
             
             % Calcula las particiones
@@ -322,9 +325,13 @@ classdef SectionDesigner < BaseModel
             
             % Agrega las alas
             obj.addDiscreteRect(xc, yc+h/2-ts/2, bs, ts, nxts, nyts, material, varargin{:}, 'xco', xc, 'yco', yc);
-            obj.addDiscreteRect(xc, yc-h/2+ti/2, bi, ti, nxti, nyti, material, varargin{:}, 'xco', xc, 'yco', yc);
-            obj.addDiscreteRect(xc, yc, tw, h-ti-ts, nxw, nyw, material, varargin{:}, 'xco', xc, 'yco', yc);
-            
+            if bi ~= 0
+                obj.addDiscreteRect(xc, yc-h/2+ti/2, bi, ti, nxti, nyti, material, varargin{:}, 'xco', xc, 'yco', yc);
+                obj.addDiscreteRect(xc, yc, tw, h-ti-ts, nxw, nyw, material, varargin{:}, 'xco', xc, 'yco', yc);
+            else
+                obj.addDiscreteRect(xc, yc-ts/2, tw, h-ti-ts, nxw, nyw, material, varargin{:}, 'xco', xc, 'yco', yc);
+            end
+                
         end % addDiscreteISection function
         
         function addDiscreteHSection(obj, xc, yc, b, h, tf, tw, nx, ny, material, varargin)
@@ -356,6 +363,36 @@ classdef SectionDesigner < BaseModel
             obj.addDiscreteISection(xc, yc, b, b, h, tf, tf, tw, nx, ny, material, varargin{:});
             
         end % addDiscreteHSection function
+        
+        function addDiscreteTSection(obj, xc, yc, b, h, tf, tw, nx, ny, material, varargin)
+            % addDiscreteTSection: Agrega una seccion T discreta
+            %
+            % Parametros requeridos:
+            %   xc              Centro de gravedad
+            %   yc              Centro de gravedad
+            %   b               Ancho del ala
+            %   h               Altura de la seccion
+            %   tf              Espesor del ala
+            %   tw              Espesor del alma
+            %   nx              Discretizacion en el eje x
+            %   ny              Discretizacion en el eje y
+            %   material        Materialidad de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   linewidth       Ancho de linea de la seccion
+            %   rotation        Angulo de rotacion en grados
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 10
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteTSection(xc,yc,b,h,tf,tw,nx,ny,material,varargin)');
+            end
+            obj.addDiscreteISection(xc, yc, 0, b, h, 0, tf, tw, nx, ny, material, varargin{:});
+            
+        end % addDiscreteTSection function
         
         function addDiscreteChannel(obj, xc, yc, b, h, tf, tw, nx, ny, material, varargin)
             % addDiscreteChannel: Agrega una seccion canal discreta
@@ -405,8 +442,7 @@ classdef SectionDesigner < BaseModel
             %   yc          Centro de gravedad en y
             %   b           Ancho del canal
             %   h           Altura del canal
-            %   tf          Ancho del ala
-            %   tw          Ancho del alma
+            %   t           Altura del ala/alma
             %   nx          Discretizacion en x
             %   ny          Discretizacion en y
             %   material    Materialidad de la seccion
@@ -467,6 +503,46 @@ classdef SectionDesigner < BaseModel
             obj.addDiscreteBoxChannel(xc, yc, L, L, t, n, n, material, varargin{:});
             
         end % addDiscreteSquareChannel function
+        
+        function addDiscreteLChannel(obj, xc, yc, b, h, t, nx, ny, material, varargin)
+            % addDiscreteLChannel: Agrega un perfil L discreto
+            %
+            % Parametros requeridos:
+            %   xc          Centro de gravedad en x
+            %   yc          Centro de gravedad en y
+            %   b           Ancho del canal
+            %   h           Altura del canal
+            %   t           Ancho del ala/alma
+            %   nx          Discretizacion en x
+            %   ny          Discretizacion en y
+            %   material    Materialidad de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   linewidth       Ancho de linea de la seccion
+            %   rotation        Angulo de rotacion en grados
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 8
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteLChannel(xc,yc,b,h,t,nx,ny,material,varargin)');
+            end
+            
+            % Calcula discretizacion del ala
+            nty = max(1, ceil(ny/h*t));
+            ntx = max(1, ceil(nx/b*t));
+            nte = max(nty, ntx); % Espesor
+            
+            ntex = min(nx, nte);
+            ntey = min(ny, nte);
+            
+            % Agrega elementos
+            obj.addDiscreteRect(xc-b/2+t/2, yc, t, h-2*t, ntex, ny-2*nte, material, varargin{:}, 'xco', xc, 'yco', yc);
+            obj.addDiscreteRect(xc, yc-h/2+t/2, b, t, nx, ntey, material, varargin{:}, 'xco', xc, 'yco', yc);
+            
+        end % addDiscreteLChannel function
         
         function addDiscreteTubular(obj, xc, yc, ri, rf, n, material, varargin)
             % addDiscreteTubular: Crea seccion tubular
@@ -650,6 +726,8 @@ classdef SectionDesigner < BaseModel
             % Parametros opcionales:
             %   axis                Escribe los ejes
             %   axisSize            Largo de los ejes
+            %   axisTextSize        Altura texto ejes
+            %   axisTextWeight      Tipo de texto ejes
             %   center              Muestra o no el centroide
             %   centerColor         Color del centroide
             %   centerLineWidth     Ancho de linea del centroide
@@ -671,17 +749,19 @@ classdef SectionDesigner < BaseModel
             p.KeepUnmatched = true;
             p.addOptional('axis', true);
             p.addOptional('axisSize', 0.15);
-            p.addOptional('centroid', true);
-            p.addOptional('centroidColor', [1, 1, 0]);
-            p.addOptional('centroidLineWidth', 2);
-            p.addOptional('centroidMarkerSize', 10);
+            p.addOptional('axisTextSize', 12);
+            p.addOptional('axisTextWeight', 'bold');
             p.addOptional('center', true);
             p.addOptional('centerColor', [0, 0, 0]);
             p.addOptional('centerLineWidth', 2);
             p.addOptional('centerMarkerSize', 10);
+            p.addOptional('centroid', true);
+            p.addOptional('centroidColor', [1, 1, 0]);
+            p.addOptional('centroidLineWidth', 2);
+            p.addOptional('centroidMarkerSize', 10);
             p.addOptional('contCenter', false);
             p.addOptional('legend', false);
-            p.addOptional('legendCentroid', false);
+            p.addOptional('legendCentroid', true);
             p.addOptional('legendMaterial', true);
             p.addOptional('limMargin', 0);
             p.addOptional('showdisc', false);
@@ -731,11 +811,12 @@ classdef SectionDesigner < BaseModel
                     patchy = g{21};
                     patchz = g{19};
                     for j = 1:tn
-                        patch(patchx{j}, patchy{j}, patchz, ...
+                        pl = patch(patchx{j}, patchy{j}, patchz, ...
                             'FaceColor', obj.contParams{i}.color, ...
                             'EdgeColor', obj.contParams{i}.color, ...
                             'LineWidth', obj.contParams{i}.linewidth*0.5, ...
                             'FaceAlpha', 0);
+                        set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
                         if r.contCenter
                             plot(px(j), py(j), '.', 'MarkerSize', 10, 'Color', ...
                                 [obj.contParams{i}.color, 0.25]);
@@ -814,7 +895,9 @@ classdef SectionDesigner < BaseModel
                 dp = p2 - p1;
                 pl = quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [1, 0, 0]);
                 set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
-                text(p2(1)-0.1*la, p2(2)+0.15*la, 'x', 'Color', [1, 0, 0]);
+                text(p2(1)-0.05*la, p2(2)+0.20*la, 'x', 'Color', [1, 0, 0], ...
+                    'FontWeight', r.axisTextWeight, 'FontSize', r.axisTextSize, ...
+                    'HorizontalAlignment', 'center');
                 
                 % Eje y
                 p1 = [gx, gy];
@@ -822,7 +905,9 @@ classdef SectionDesigner < BaseModel
                 dp = p2 - p1;
                 pl = quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [0, 1, 0]);
                 set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
-                text(p2(1)+0.1*la, p2(2), 'y', 'Color', [0, 1, 0]);
+                text(p2(1)+0.15*la, p2(2), 'y', 'Color', [0, 1, 0], ...
+                    'FontWeight', r.axisTextWeight, 'FontSize', r.axisTextSize, ...
+                    'HorizontalAlignment', 'center');
                 
             end
             
@@ -1235,6 +1320,26 @@ classdef SectionDesigner < BaseModel
             fprintf('\tAlto: %.2f\n', sy);
             fprintf('\tNumero de elementos: %d\n\t\tContinuos: %d\n\t\tSingulares: %d\n', ...
                 obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
+            
+            % Obtiene los materiales
+            mats = {};
+            for i = 1:length(obj.contMat)
+                mats{i} = obj.contMat{i};
+            end
+            for j = 1:length(obj.singMat)
+                mats{i+j} = obj.singMat{j};
+            end
+            
+            matsL = getClassnameCell(mats); % Lista con clase: total
+            matsK = matsL.keys();
+            matsV = matsL.values();
+            % matsT = length(mats); % Materiales diferentes
+            
+            fprintf('\tMateriales diferentes: %d\n', length(matsK));
+            for i = 1:length(matsK)
+                fprintf('\t\t%d %s\n', matsV{i}, matsK{i});
+            end % for i
+            
             fprintf('\tLimites de la seccion:\n\t\tx: (%.2f,%.2f)\n\t\ty: (%.2f,%.2f)\n', ...
                 xmin, xmax, ymin, ymax);
             
@@ -1354,7 +1459,7 @@ classdef SectionDesigner < BaseModel
             fprintf('\t\tphiy: %e (1/%s)\n', phiy, r.unitlength);
             if strcmp(r.mode, 'a')
                 ra = r.angle * pi() / 180;
-                aphi = (phix+phiy)/(cos(ra) + sin(ra));
+                aphi = (phix + phiy) / (cos(ra) + sin(ra));
                 fprintf('\t\tphi: %e (1/%s)\n', aphi, r.unitlength);
             end
             
