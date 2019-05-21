@@ -2,7 +2,7 @@
 % Tarea 3 - Curso CI5221-1 Hormigon Estructural II
 % Departamento de Ingenieria Civil, Universidad de Chile
 
-wallt = SectionDesigner();
+wallt = SectionDesigner(); %#ok<*UNRCH>
 
 % Genera los materiales
 concreteA = HognestadModifiedConcrete('Hognestad-A', 30, 0.002, 0.004);
@@ -26,14 +26,15 @@ steel.getStressDeformation('emin', -2.5e-1, 'emax', 3.1e-1, ...
 % steel.plot('emin', -2.5e-1, 'emax', 3.1e-1);
 
 % Agrega los elementos
-caseNum = '1';
+caseNum = '4.1';
 h = 5000;
 b = 4000;
 bw = 300;
 d = 125;
 bw2 = 500;
 increments = 100;
-showSap = true; % En sap P=0
+showSap = false; % En sap P=0
+showST = false; % Muestra esfuerzo deformacion
 
 % Genera la seccion
 if strcmp(caseNum, '1')
@@ -47,6 +48,10 @@ if strcmp(caseNum, '1')
     p = linspace(0, 0, increments)';
     curv = 3.2e-5;
     curvang = -90;
+    iDef3 = 46; % Posicion deformacion a 0.003
+    phiDef3 = -1.454545e-05;
+    iDef8 = 0; % Posicion deformacion a 0.008
+    phiDef8 = Inf;
 elseif strcmp(caseNum, '2')
     As = 8000;
     Asp = 8000;
@@ -56,8 +61,16 @@ elseif strcmp(caseNum, '2')
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = ones(increments, 1) .* 9000 * 1000 * ~showSap; % N
-    curv = 3.7e-5;
+    if showSap % P=0
+        curv = 3.7e-5;
+    else
+        curv = 5e-6;
+    end
     curvang = -90;
+    iDef3 = 47; % Posicion deformacion a 0.003
+    phiDef3 = -2.323232e-06;
+    iDef8 = 66; % Posicion deformacion a 0.008
+    phiDef8 = -3.282828e-06;
 elseif strcmp(caseNum, '3')
     As = 8000;
     Asp = 8000;
@@ -67,8 +80,16 @@ elseif strcmp(caseNum, '3')
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = ones(increments, 1) .* 9000 * 1000 * ~showSap; % N
-    curv = 3.2e-5;
+    if showSap % P=0
+        curv = 3.2e-5;
+    else
+        curv = 3.2e-5;
+    end
     curvang = -90;
+    iDef3 = 6; % Posicion deformacion a 0.003
+    phiDef3 = -1.616162e-06;
+    iDef8 = 22; % Posicion deformacion a 0.008
+    phiDef8 = -6.787879e-06;
 elseif strcmp(caseNum, '4.1')
     As = 8000;
     Asp = 8000;
@@ -79,8 +100,16 @@ elseif strcmp(caseNum, '4.1')
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = ones(increments, 1) .* 9000 * 1000 * ~showSap; % N
-    curv = 4e-5;
-    curvang = 90;
+    if showSap % P=0
+        curv = 3.5e-5;
+    else
+        curv = 3.2e-5;
+    end
+    curvang = -90;
+    iDef3 = 7; % Posicion deformacion a 0.003
+    phiDef3 = -1.939394e-06;
+    iDef8 = 33; % Posicion deformacion a 0.008
+    phiDef8 = -1.034343e-05;
 elseif strcmp(caseNum, '4.2')
     As = 8000;
     Asp = 8000;
@@ -91,8 +120,16 @@ elseif strcmp(caseNum, '4.2')
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = ones(increments, 1) .* 9000 * 1000 * ~showSap; % N
-    curv = 3.5e-5;
-    curvang = -90;
+    if showSap % P=0
+        curv = 3.5e-5;
+    else
+        curv = 4e-5;
+    end
+    curvang = 90;
+    iDef3 = 38; % Posicion deformacion a 0.003
+    phiDef3 = 1.494949e-05;
+    iDef8 = 0; % Posicion deformacion a 0.008
+    phiDef8 = Inf;
 else
     error('Caso invalido');
 end
@@ -111,10 +148,21 @@ if showSap
     analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
         'sapfile', sprintf('test/section/mcurv-sap2000/wallT%s_%d.txt', caseNum, curvang), ...
         'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
-        'sapdiff', true, 'vecphi', [-1.584e-5], 'vecphiColor', {'k'});
+        'sapdiff', true, 'vecphi', [phiDef3, phiDef8], 'vecphiColor', {'r', 'k'});
 else
-    analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T'); %#ok<*UNRCH>
+    analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
+        'vecphi', [phiDef3, phiDef8], 'vecphiColor', {'r', 'k'});
 end
-analysis.plotStress(2);
-analysis.plotStrain(50);
+
+% Grafica tension y deformacion para deformacion de 0.003 y 0.008 si es que
+% aplica
+if showST
+    analysis.plotStrain(iDef3);
+    analysis.plotStress(iDef3);
+    if iDef8 ~= 0
+        analysis.plotStrain(iDef8);
+        analysis.plotStress(iDef8);
+    end
+end
+
 % analysis.plot_lastIter();

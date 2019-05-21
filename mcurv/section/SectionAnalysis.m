@@ -414,6 +414,7 @@ classdef SectionAnalysis < BaseModel
                 error('vecphi debe tener igual largo que sus colores vecphiColor');
             end
             
+            fprintf('Graficando e0-M:\n');
             mxInt = abs(obj.lastsole0p{1}.*r.factorM);
             myInt = abs(obj.lastsole0p{2}.*r.factorM);
             phix = abs(obj.lastsole0p{3});
@@ -682,6 +683,10 @@ classdef SectionAnalysis < BaseModel
             end
             xlim([min(phi), max(phi)]);
             
+            % Obtiene los limites
+            ylm = get(gca, 'ylim');
+            mmin = min(ylm);
+            
             % Calcula las interpolaciones
             if (strcmp(r.m, 'x') || strcmp(r.m, 'y') || strcmp(r.m, 'T'))
                 for i = 1:length(r.vecphi)
@@ -690,16 +695,19 @@ classdef SectionAnalysis < BaseModel
                     % graficarlo, si no lo encuentra escribe en la consola
                     mi = 0;
                     phiobj = abs(r.vecphi(i));
+                    if phiobj == Inf
+                        continue;
+                    end
                     for j = 1:length(phi) - 1
                         if phi(j) <= phiobj && phiobj <= phi(j+1)
-                            mi = m(j);
+                            mi = min(m(j), m(j+1));
                         end
                     end
                     
                     % Grafica el punto
                     if mi ~= 0
                         fprintf('\tphi %e: Momento %f %s\n', phiobj, mi, r.unitloadM);
-                        plot([phiobj, phiobj], [min(m), mi], '--', ...
+                        plot([phiobj, phiobj], [mmin, mi], '--', ...
                             'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw, ...
                             'DisplayName', sprintf('\\phi=%.3e', phiobj));
                         pl = plot([min(phi), phiobj], [mi, mi], '--', ...

@@ -1315,6 +1315,7 @@ classdef SectionDesigner < BaseModel
             else
                 error('Tipo de grafico desconocido, type:strain,stress');
             end
+            fprintf('\tSeccion: %s\n', obj.getName());
             fprintf('\tTipo: %s\n', r.plot);
             
             r.i = ceil(r.i);
@@ -1328,6 +1329,7 @@ classdef SectionDesigner < BaseModel
                         r.i, length(e0));
                 end
             end
+            fprintf('\tPunto evaluacion: %d\n', r.i);
             
             % Aplica limites
             if abs(e0) < 1e-20
@@ -1350,6 +1352,11 @@ classdef SectionDesigner < BaseModel
             fprintf('\t\te0: %e (-)\n', e0);
             fprintf('\t\tphix: %e (1/%s)\n', phix, r.unitlength);
             fprintf('\t\tphiy: %e (1/%s)\n', phiy, r.unitlength);
+            if strcmp(r.mode, 'a')
+                ra = r.angle * pi() / 180;
+                aphi = (phix+phiy)/(cos(ra) + sin(ra));
+                fprintf('\t\tphi: %e (1/%s)\n', aphi, r.unitlength);
+            end
             
             % Calcula cargas
             p = obj.calcP(e0, phix, phiy);
