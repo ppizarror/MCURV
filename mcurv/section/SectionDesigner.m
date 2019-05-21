@@ -331,7 +331,7 @@ classdef SectionDesigner < BaseModel
             else
                 obj.addDiscreteRect(xc, yc-ts/2, tw, h-ti-ts, nxw, nyw, material, varargin{:}, 'xco', xc, 'yco', yc);
             end
-                
+            
         end % addDiscreteISection function
         
         function addDiscreteHSection(obj, xc, yc, b, h, tf, tw, nx, ny, material, varargin)
@@ -976,50 +976,6 @@ classdef SectionDesigner < BaseModel
             
         end % plotStrain function
         
-        function [xi, yi] = getCentroid(obj)
-            % getCentroid: Calcula el centroide
-            
-            % Calcula el centroide en x
-            xid = 0;
-            yid = 0;
-            at = 0; % Area total
-            for i = 1:obj.contTotal
-                g = obj.contGeom{i};
-                xid = xid + g{6} * g{8};
-                yid = yid + g{7} * g{8};
-                at = at + g{8};
-            end
-            
-            for i = 1:obj.singTotal
-                g = obj.singGeom{i};
-                xid = xid + g{1} * g{3};
-                yid = yid + g{2} * g{3};
-                at = at + g{3};
-            end
-            
-            % Calcula el centroide
-            xi = xid / at;
-            yi = yid / at;
-            
-        end % getCentroid function
-        
-        function [area, areacont, areasing] = getArea(obj)
-            % getArea: Calcula el area total
-            
-            area = 0; % Area total
-            for i = 1:obj.contTotal
-                g = obj.contGeom{i};
-                area = area + g{8};
-            end
-            areacont = area;
-            for i = 1:obj.singTotal
-                g = obj.singGeom{i};
-                area = area + g{3};
-            end
-            areasing = area - areacont;
-            
-        end % getArea function
-        
         function updateProps(obj)
             % updateProps: Actualiza las propiedades del modelo previo
             % analisis
@@ -1283,6 +1239,99 @@ classdef SectionDesigner < BaseModel
             
         end % getLimits function
         
+        function [ix, iy] = getInertia(obj)
+            % getInertia: Calcula la inercia de la seccion
+            
+            [xc, yc] = obj.getCentroid();
+            ix = 0;
+            iy = 0;
+            at = 0;
+            for i = 1:obj.contTotal
+                g = obj.contGeom{i};
+                px = g{1};
+                py = g{2};
+                ai = g{3} * g{4};
+                tn = g{5};
+                for j = 1:tn
+                    ix = ix + (py(j) - yc)^2 * ai;
+                    iy = iy + (px(j) - xc)^2 * ai;
+                    at = at + ai;
+                end
+            end
+            for i = 1:obj.singTotal
+                g = obj.singGeom{i};
+                ix = ix + (g{2} - yc)^2 * g{3};
+                iy = iy + (g{1} - xc)^2 * g{3};
+            end
+            
+        end % getInertia function
+        
+        function [rx, ry] = getGyradius(obj)
+            % getGyradius: Calcula el radio de giro
+            
+            [ix, iy] = obj.getInertia();
+            a = obj.getArea();
+            
+            rx = sqrt(ix/a);
+            ry = sqrt(iy/a);
+            
+        end % getGyradius function
+        
+        function [wx, wy] = getPlasticModuli(obj)
+            % getGyradius: Calcula el radio de giro
+            
+            [ix, iy] = obj.getInertia();
+            [sy, sx] = obj.getSize();
+            
+            wx = ix / (sx / 2);
+            wy = iy / (sy / 2);
+            
+        end % getGyradius function
+        
+        function [xi, yi] = getCentroid(obj)
+            % getCentroid: Calcula el centroide
+            
+            % Calcula el centroide en x
+            xid = 0;
+            yid = 0;
+            at = 0; % Area total
+            for i = 1:obj.contTotal
+                g = obj.contGeom{i};
+                xid = xid + g{6} * g{8};
+                yid = yid + g{7} * g{8};
+                at = at + g{8};
+            end
+            
+            for i = 1:obj.singTotal
+                g = obj.singGeom{i};
+                xid = xid + g{1} * g{3};
+                yid = yid + g{2} * g{3};
+                at = at + g{3};
+            end
+            
+            % Calcula el centroide
+            xi = xid / at;
+            yi = yid / at;
+            
+        end % getCentroid function
+        
+        function [area, areacont, areasing] = getArea(obj)
+            % getArea: Calcula el area total
+            
+            area = 0; % Area total
+            for i = 1:obj.contTotal
+                g = obj.contGeom{i};
+                area = area + g{8};
+            end
+            areacont = area;
+            for i = 1:obj.singTotal
+                g = obj.singGeom{i};
+                area = area + g{3};
+            end
+            areasing = area - areacont;
+            
+        end % getArea function
+        
         function [x, y] = getCenter(obj)
             % getCenter: Calcula el centro del limite
             
@@ -1312,12 +1361,18 @@ classdef SectionDesigner < BaseModel
             [xmin, xmax, ymin, ymax] = obj.getLimits();
             [sx, sy] = obj.getSize();
             [a, ac, as] = obj.getArea();
+            [ix, iy] = obj.getInertia();
+            [rx, ry] = obj.getGyradius();
+            [wx, wy] = obj.getPlasticModuli();
             
             fprintf('\tCentroide: (%.2f,%.2f)\n', cx, cy);
             fprintf('\tCentro geometrico: (%.2f,%.2f)\n', gx, gy);
-            fprintf('\tArea: %.2f\n\t\tContinuos: %.2f\n\t\tSingulares: %.2f\n', a, ac, as);
             fprintf('\tAncho: %.2f\n', sx);
             fprintf('\tAlto: %.2f\n', sy);
+            fprintf('\tArea: %.2f\n\t\tContinuos: %.2f\n\t\tSingulares: %.2f\n', a, ac, as);
+            fprintf('\tInercia:\n\t\tIx: %e\n\t\tIy: %e\n', ix, iy);
+            fprintf('\tModulo plastico:\n\t\tWx: %e\n\t\tWy: %e\n', wx, wy);
+            fprintf('\tRadio de giro:\n\t\trx: %.3f\n\t\try: %.3f\n', rx, ry);
             fprintf('\tNumero de elementos: %d\n\t\tContinuos: %d\n\t\tSingulares: %d\n', ...
                 obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
             

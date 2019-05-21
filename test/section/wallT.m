@@ -138,7 +138,6 @@ phi = linspace(0, curv, increments);
 wallt.setName(sprintf('Muro T - Caso %s', caseNum));
 wallt.disp();
 wallt.plot('showdisc', true, 'legend', true);
-return;
 
 % Ejecuta el analisis
 analysis = SectionAnalysis('Analisis', 1000, 0.01, 'showprogress', true);
