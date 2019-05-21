@@ -111,9 +111,10 @@ if showSap
     analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
         'sapfile', sprintf('test/section/mcurv-sap2000/wallT%s_%d.txt', caseNum, curvang), ...
         'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
-        'sapdiff', true);
+        'sapdiff', true, 'vecphi', [-1.584e-5], 'vecphiColor', {'k'});
 else
     analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T'); %#ok<*UNRCH>
 end
-analysis.plotStress(2, 'factorM', 1e-6, 'factorP', 1e-3);
+analysis.plotStress(2);
+analysis.plotStrain(50);
 % analysis.plot_lastIter();

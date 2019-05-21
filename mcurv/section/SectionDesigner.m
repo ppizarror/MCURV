@@ -628,7 +628,10 @@ classdef SectionDesigner < BaseModel
             
             obj.singTotal = obj.singTotal + 1;
             b = sqrt(area * r.plotareafactor);
-            obj.singGeomPlot{obj.singTotal} = [xc - b / 2, yc - b / 2, b, b];
+            xpatch = [(xc - b / 2), (xc + b / 2), (xc + b / 2), (xc + -b / 2)];
+            ypatch = [(yc - b / 2), (yc - b / 2), (yc + b / 2), (yc + b / 2)];
+            zpatch = [0, 0, 0, 0];
+            obj.singGeomPlot{obj.singTotal} = {xpatch, ypatch, zpatch};
             obj.singMat{obj.singTotal} = material;
             obj.singParams{obj.singTotal} = r;
             
@@ -656,6 +659,9 @@ classdef SectionDesigner < BaseModel
             %   centroidLineWidth   Ancho de linea del centroide
             %   centroidMarkerSize  Tamano del marcador
             %   contCenter          Muestra el centro de los e. continuos
+            %   legend              Muestra la leyenda
+            %   legendCentroid      Leyenda centroide
+            %   legendMaterial      Leyenda de materiales
             %   limMargin           Incrementa el margen
             %   showdisc            Grafica la discretizacion
             %   title               Titulo del grafico
@@ -674,6 +680,9 @@ classdef SectionDesigner < BaseModel
             p.addOptional('centerLineWidth', 2);
             p.addOptional('centerMarkerSize', 10);
             p.addOptional('contCenter', false);
+            p.addOptional('legend', false);
+            p.addOptional('legendCentroid', false);
+            p.addOptional('legendMaterial', true);
             p.addOptional('limMargin', 0);
             p.addOptional('showdisc', false);
             p.addOptional('title', obj.getName());
@@ -689,6 +698,7 @@ classdef SectionDesigner < BaseModel
             grid on;
             grid minor;
             axis equal;
+            addedMaterials = {};
             
             % Agrega los elementos continuos
             for i = 1:obj.contTotal
@@ -696,11 +706,18 @@ classdef SectionDesigner < BaseModel
                 patchx = g{17};
                 patchy = g{18};
                 patchz = g{19};
-                patch(patchx, patchy, patchz, ...
+                matname = obj.contMat{i}.getName();
+                pl = patch(patchx, patchy, patchz, ...
                     'FaceColor', obj.contParams{i}.color, ...
                     'EdgeColor', obj.contParams{i}.color, ...
                     'LineWidth', obj.contParams{i}.linewidth*0.5, ...
-                    'FaceAlpha', obj.contParams{i}.transparency);
+                    'FaceAlpha', obj.contParams{i}.transparency, ...
+                    'DisplayName', matname);
+                if ~isCellMember(addedMaterials, matname) && r.legendMaterial
+                    addedMaterials{length(addedMaterials)+1} = matname;
+                else
+                    set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
+                end
             end
             
             % Grafica la discretizacion de los elementos continuos
@@ -729,9 +746,22 @@ classdef SectionDesigner < BaseModel
             
             % Agrega los elementos discretos
             for i = 1:obj.singTotal
-                rectangle('Position', obj.singGeomPlot{i}, ...
-                    'FaceColor', [obj.singParams{i}.color, obj.singParams{i}.transparency], ...
-                    'EdgeColor', [obj.singParams{i}.color, obj.singParams{i}.transparency]);
+                sg = obj.singGeomPlot{i};
+                patchx = sg{1};
+                patchy = sg{2};
+                patchz = sg{3};
+                matname = obj.singMat{i}.getName();
+                pl = patch(patchx, patchy, patchz, ...
+                    'FaceColor', obj.singParams{i}.color, ...
+                    'EdgeColor', obj.singParams{i}.color, ...
+                    'FaceAlpha', obj.singParams{i}.transparency, ...
+                    'EdgeAlpha', obj.singParams{i}.transparency, ...
+                    'DisplayName', matname);
+                if ~isCellMember(addedMaterials, matname) && r.legendMaterial
+                    addedMaterials{length(addedMaterials)+1} = matname;
+                else
+                    set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
+                end
             end
             
             % Modifica los ejes para dejar la misma escala
@@ -746,17 +776,28 @@ classdef SectionDesigner < BaseModel
             [gx, gy] = obj.getCenter();
             [xc, yc] = obj.getCentroid();
             [sx, sy] = getSize(obj);
+            if r.legend
+                legend('location', 'best');
+            end
             
             % Escribe el centro de gravedad
             if r.centroid
-                plot(xc, yc, '+', 'Color', r.centroidColor, 'MarkerSize', ...
-                    r.centroidMarkerSize, 'LineWidth', r.centroidLineWidth);
+                pl = plot(xc, yc, '+', 'Color', r.centroidColor, 'MarkerSize', ...
+                    r.centroidMarkerSize, 'LineWidth', r.centroidLineWidth, ...
+                    'DisplayName', sprintf('Centroide (%.2f, %.2f)', xc, yc));
+                if ~r.legendCentroid
+                    set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
+                end
             end
             
             % Escribe el centro geometrico
             if r.center
-                plot(gx, gy, '+', 'Color', r.centerColor, 'MarkerSize', ...
-                    r.centerMarkerSize, 'LineWidth', r.centerLineWidth);
+                pl = plot(gx, gy, '+', 'Color', r.centerColor, 'MarkerSize', ...
+                    r.centerMarkerSize, 'LineWidth', r.centerLineWidth, ...
+                    'DisplayName', sprintf('Centro (%.2f, %.2f)', gx, gy));
+                if ~r.legendCentroid
+                    set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
+                end
             end
             
             % Escribe los ejes
@@ -771,14 +812,16 @@ classdef SectionDesigner < BaseModel
                 p1 = [gx, gy];
                 p2 = [gx + la, gy];
                 dp = p2 - p1;
-                quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [1, 0, 0]);
+                pl = quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [1, 0, 0]);
+                set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
                 text(p2(1)-0.1*la, p2(2)+0.15*la, 'x', 'Color', [1, 0, 0]);
                 
                 % Eje y
                 p1 = [gx, gy];
                 p2 = [gx, gy + la];
                 dp = p2 - p1;
-                quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [0, 1, 0]);
+                pl = quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [0, 1, 0]);
+                set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
                 text(p2(1)+0.1*la, p2(2), 'y', 'Color', [0, 1, 0]);
                 
             end
@@ -1345,7 +1388,7 @@ classdef SectionDesigner < BaseModel
             movegui(plt, 'center');
             if strcmp(r.type, 'stress')
                 set(gcf, 'name', 'Esfuerzos');
-            elseif strcmp(r.type, 'stress')
+            elseif strcmp(r.type, 'strain')
                 set(gcf, 'name', 'Deformaciones');
             end
             hold on;
