@@ -339,14 +339,16 @@ classdef SectionAnalysis < BaseModel
             movegui(plt, 'center');
             set(gcf, 'name', 'Momento curvatura');
             hold on;
+            secName = obj.lastsole0p{8}.getName();
             niter = obj.lastsole0p{9};
             
-            plot(1:length(niter), niter, 'k-', 'Linewidth', 1.5);
+            plot(1:length(niter), niter, '-', 'Linewidth', 1.5);
             grid on;
             grid minor;
             
             xlabel('Numero de paso');
             ylabel('Numero de iteraciones');
+            title({'Variacion numero iteraciones', secName});
             
         end % plot_lastIter function
         
@@ -691,6 +693,7 @@ classdef SectionAnalysis < BaseModel
             mmin = min(ylm);
             
             % Calcula las interpolaciones
+            kphi = 1; % Numero de puntos agregados
             if (strcmp(r.m, 'x') || strcmp(r.m, 'y') || strcmp(r.m, 'T'))
                 for i = 1:length(r.vecphi)
                     
@@ -712,7 +715,7 @@ classdef SectionAnalysis < BaseModel
                         fprintf('\tphi %e: Momento %f %s\n', phiobj, mi, r.unitloadM);
                         plot([phiobj, phiobj], [mmin, mi], '--', ...
                             'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw, ...
-                            'DisplayName', sprintf('\\phi=%.3e', phiobj));
+                            'DisplayName', sprintf('\\phi_%d=%.3e', kphi, phiobj));
                         pl = plot([min(phi), phiobj], [mi, mi], '--', ...
                             'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw);
                         set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
@@ -720,6 +723,7 @@ classdef SectionAnalysis < BaseModel
                             'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw, ...
                             'MarkerSize', r.vecphiSize);
                         set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
+                        kphi = kphi + 1;
                     end
                     
                 end
@@ -795,13 +799,13 @@ classdef SectionAnalysis < BaseModel
             plot(phi, pInt, '-', 'LineWidth', r.linewidth);
             grid on;
             grid minor;
-            ylabel(sprintf('Carga axial P (%s)', r.unitloadP));
+            ylabel(sprintf('Carga axial interna P_{int} (%s)', r.unitloadP));
             
             if ~strcmp(curvAxis, 'a')
-                title({sprintf('Carga axial vs curvatura \\phi_%s', curvAxis), secName});
+                title({sprintf('Carga axial interna vs curvatura \\phi_%s', curvAxis), secName});
                 xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
             else
-                title({sprintf('Carga axial vs curvatura \\phi - Angulo %.1f', angle), secName});
+                title({sprintf('Carga axial interna vs curvatura \\phi - Angulo %.1f', angle), secName});
                 xlabel(sprintf('Curvatura \\phi (%s)', r.unitlength));
             end
             if r.limPos

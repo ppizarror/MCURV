@@ -27,7 +27,7 @@ steel.getStressDeformation('emin', -2.5e-1, 'emax', 3.1e-1, ...
 % steel.plot('emin', -2.5e-1, 'emax', 3.1e-1);
 
 % Agrega los elementos
-caseNum = '1';
+caseNum = '1'; % Numero caso analisis
 h = 5000;
 b = 4000;
 bw = 300;
@@ -148,17 +148,6 @@ wallt.plot('showdisc', true, 'legend', true);
 analysis = SectionAnalysis('Analisis', 1000, 0.01, 'showprogress', true);
 analysis.calc_e0M_angle(wallt, p, phi, curvang, 'ppos', [0, 0]);
 
-% Grafica, N*mm -> kN*m
-if showSap
-    analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
-        'sapfile', sprintf('test/section/mcurv-sap2000/wallT%s_%d.txt', caseNum, curvang), ...
-        'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
-        'sapdiff', true, 'vecphi', [phiDef3, phiDef8] .* ~showSap, 'vecphiColor', {'r', 'k'});
-else
-    analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
-        'vecphi', [phiDef3, phiDef8], 'vecphiColor', {'r', 'k'});
-end
-
 % Grafica tension y deformacion para deformacion de 0.003 y 0.008 si es que
 % aplica
 if showST && ~showSap
@@ -170,4 +159,16 @@ if showST && ~showSap
     end
 end
 
-% analysis.plot_lastIter();
+% Grafica momento curvatura, N*mm -> kN*m
+if showSap
+    analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
+        'sapfile', sprintf('test/section/mcurv-sap2000/wallT%s_%d.txt', caseNum, curvang), ...
+        'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
+        'sapdiff', true, 'vecphi', [phiDef3, phiDef8] .* ~showSap, 'vecphiColor', {'r', 'k'});
+else
+    analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
+        'vecphi', [phiDef3, phiDef8], 'vecphiColor', {'r', 'k'});
+    analysis.plot_e0M('plot', 'pphi');
+end
+
+analysis.plot_lastIter();
