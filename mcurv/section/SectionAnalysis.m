@@ -429,6 +429,7 @@ classdef SectionAnalysis < BaseModel
             angle = obj.lastsole0p{11};
             phi = obj.lastsole0p{12};
             defTotal = obj.lastsole0p{13};
+            fprintf('\tSeccion: %s\n', secName);
             
             % Aplica medfilt
             if r.medfilt

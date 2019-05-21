@@ -2,6 +2,7 @@
 % Tarea 3 - Curso CI5221-1 Hormigon Estructural II
 % Departamento de Ingenieria Civil, Universidad de Chile
 
+close all;
 wallt = SectionDesigner(); %#ok<*UNRCH>
 
 % Genera los materiales
@@ -33,7 +34,7 @@ bw = 300;
 d = 125;
 bw2 = 500;
 increments = 100;
-showSap = true; % En sap P=0
+showSap = false; % En sap P=0
 showST = true; % Muestra esfuerzo deformacion
 
 % Genera la seccion
@@ -46,10 +47,14 @@ if strcmp(caseNum, '1')
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = linspace(0, 0, increments)';
-    curv = 3.2e-5;
+    if showSap % P=0
+        curv = 3.2e-5;
+    else
+        curv = 5e-5;
+    end
     curvang = 90; % Con respecto al eje y
-    iDef3 = 46; % Posicion deformacion a 0.003
-    phiDef3 = -1.454545e-05;
+    iDef3 = 30; % Posicion deformacion a 0.003
+    phiDef3 = 1.464646e-05;
     iDef8 = 0; % Posicion deformacion a 0.008
     phiDef8 = Inf;
 elseif strcmp(caseNum, '2')
@@ -105,7 +110,7 @@ elseif strcmp(caseNum, '4.1')
     else
         curv = 3.2e-5;
     end
-    curvang = -90; % Con respecto al eje y
+    curvang = 90; % Con respecto al eje y
     iDef3 = 7; % Posicion deformacion a 0.003
     phiDef3 = -1.939394e-06;
     iDef8 = 33; % Posicion deformacion a 0.008
@@ -123,11 +128,11 @@ elseif strcmp(caseNum, '4.2')
     if showSap % P=0
         curv = 3.5e-5;
     else
-        curv = 4e-5;
+        curv = 5e-5;
     end
     curvang = -90; % Con respecto al eje y
-    iDef3 = 38; % Posicion deformacion a 0.003
-    phiDef3 = 1.494949e-05;
+    iDef3 = 31; % Posicion deformacion a 0.003
+    phiDef3 = 1.515152e-05;
     iDef8 = 0; % Posicion deformacion a 0.008
     phiDef8 = Inf;
 else

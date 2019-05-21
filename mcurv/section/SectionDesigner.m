@@ -1524,6 +1524,8 @@ classdef SectionDesigner < BaseModel
                 ra = r.angle * pi() / 180;
                 aphi = (phix + phiy) / (cos(-ra) + sin(-ra));
                 fprintf('\t\tphi: %e (1/%s)\n', aphi, r.unitlength);
+            else
+                aphi = 0;
             end
             
             % Calcula cargas
@@ -1722,11 +1724,11 @@ classdef SectionDesigner < BaseModel
                 if strcmp(r.mode, 'xy')
                     plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
                         sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy), ...
-                        sprintf('\\sigma_{max}: %.3e  /  \\sigma_{min}: %.3e', flim(2), flim(1))};
+                        sprintf('\\sigma_{max}: %.3e %s  /  \\sigma_{min}: %.3e %s', flim(2), r.unitloadF, flim(1), r.unitloadF)};
                 else
                     plotTitle = {sprintf('%s  -  Angulo %.1f  -  Esfuerzos i=%d', obj.getName(), r.angle, r.i), ...
-                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy), ...
-                        sprintf('\\sigma_{max}: %.3e  /  \\sigma_{min}: %.3e', flim(2), flim(1))};
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e  /  \\phi: %.3e', e0, phix, phiy, aphi), ...
+                        sprintf('\\sigma_{max}: %.3e %s  /  \\sigma_{min}: %.3e %s', flim(2), r.unitloadF, flim(1), r.unitloadF)};
                 end
             elseif strcmp(r.type, 'strain')
                 if strcmp(r.mode, 'xy')
@@ -1735,7 +1737,7 @@ classdef SectionDesigner < BaseModel
                         sprintf('\\epsilon_{max}: %.3e  /  \\epsilon_{min}: %.3e', flim(2), flim(1))};
                 else
                     plotTitle = {sprintf('%s  -  Angulo %.1f  -  Deformaciones i=%d', obj.getName(), r.angle, r.i), ...
-                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy), ...
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e  /  \\phi: %.3e', e0, phix, phiy, aphi), ...
                         sprintf('\\epsilon_{max}: %.3e  /  \\epsilon_{min}: %.3e', flim(2), flim(1))};
                 end
             end
