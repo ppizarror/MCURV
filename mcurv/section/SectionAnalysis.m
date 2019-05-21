@@ -358,6 +358,7 @@ classdef SectionAnalysis < BaseModel
             %   factorP         Factor de escala para la carga axial
             %   legend          Ubicacion de la leyenda
             %   limPos          Limita analisis a valores positivos
+            %   linewidth       Ancho de linea de los graficos
             %   m               Eje analisis momento 'all','x','y','T'
             %   medfilt         Aplica medfilt
             %   medfiltN        Numero de filtro
@@ -372,6 +373,10 @@ classdef SectionAnalysis < BaseModel
             %   unitlength      Unidad de longitud
             %   unitloadM       Unidad de carga para el momento
             %   unitloadP       Unidad de carga axial
+            %   vecphi          Vector phi para interpolar
+            %   vecphiColor     Cell phi colores
+            %   vecphiLw        Ancho de linea
+            %   vecphiSize      Porte puntos
             
             p = inputParser;
             p.KeepUnmatched = true;
@@ -379,6 +384,7 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('factorP', 1e-3); % Si se usan N a kN
             p.addOptional('legend', 'southeast');
             p.addOptional('limPos', true)
+            p.addOptional('linewidth', 1.5);
             p.addOptional('m', 'T'); % Cual eje usar para el momento: 'all','x','y','T'
             p.addOptional('medfilt', true); % Aplica medfilt
             p.addOptional('medfiltN', 3);
@@ -393,11 +399,19 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('unitlength', '1/mm'); % Unidad de largo curvatura
             p.addOptional('unitloadM', 'kN*m'); % Unidad de carga
             p.addOptional('unitloadP', 'kN'); % Unidad de carga
+            p.addOptional('vecphi', []); % Vector phi para interpolar
+            p.addOptional('vecphiColor', {}); % Cell phi colores
+            p.addOptional('vecphiLw', 0.5);
+            p.addOptional('vecphiSize', 15);
             parse(p, varargin{:});
             r = p.Results;
             
             if isempty(obj.lastsole0p)
                 error('Analisis e0M no ha sido ejecutado');
+            end
+            
+            if length(r.vecphi) ~= length(r.vecphiColor)
+                error('vecphi debe tener igual largo que sus colores vecphiColor');
             end
             
             mxInt = abs(obj.lastsole0p{1}.*r.factorM);
@@ -470,6 +484,7 @@ classdef SectionAnalysis < BaseModel
             
             % Finaliza el grafico
             drawnow();
+            dispMCURV();
             
         end % plot_e0M function
         
@@ -601,24 +616,27 @@ classdef SectionAnalysis < BaseModel
             
             % Grafica las curvas
             if strcmp(r.m, 'all')
-                plot(phi, mxInt, '-', 'LineWidth', 1.5);
-                plot(phi, myInt, '-', 'LineWidth', 1.5);
+                plot(phi, mxInt, '-', 'LineWidth', r.linewidth);
+                plot(phi, myInt, '-', 'LineWidth', r.linewidth);
                 leg{length(leg)+1} = 'M_x';
                 leg{length(leg)+1} = 'M_y';
                 mAxis = 'M'; % Eje del momento a mostrar en el titulo
             elseif strcmp(r.m, 'x')
-                plot(phi, mxInt, '-', 'LineWidth', 1.5);
+                plot(phi, mxInt, '-', 'LineWidth', r.linewidth);
                 leg{length(leg)+1} = 'M_x';
                 mAxis = 'M_x';
+                m = mxInt;
             elseif strcmp(r.m, 'y')
-                plot(phi, myInt, '-', 'LineWidth', 1.5);
+                plot(phi, myInt, '-', 'LineWidth', r.linewidth);
                 leg{length(leg)+1} = 'M_y';
                 mAxis = 'M_y';
+                m = myInt;
             elseif strcmp(r.m, 'T')
                 mtInt = sqrt(mxInt.^2+myInt.^2);
-                plot(phi, mtInt, '-', 'LineWidth', 1.5);
+                plot(phi, mtInt, '-', 'LineWidth', r.linewidth);
                 leg{length(leg)+1} = 'M_T';
                 mAxis = 'M_T';
+                m = mtInt;
             else
                 error('Valor incorrecto parametro m: all,x,y,T');
             end
@@ -641,7 +659,7 @@ classdef SectionAnalysis < BaseModel
                     phiF = phi;
                     sapMintF = sapMint;
                 end
-                plot(phiF, sapMintF, '-', 'LineWidth', 1.5);
+                plot(phiF, sapMintF, '-', 'LineWidth', r.linewidth);
                 if ~strcmp(r.saplegend, '')
                     leg{length(leg)+1} = r.saplegend;
                 end
@@ -664,9 +682,41 @@ classdef SectionAnalysis < BaseModel
             end
             xlim([min(phi), max(phi)]);
             
+            % Calcula las interpolaciones
+            if (strcmp(r.m, 'x') || strcmp(r.m, 'y') || strcmp(r.m, 'T'))
+                for i = 1:length(r.vecphi)
+                    
+                    % Recorre cada curvatura para buscar el objetivo y
+                    % graficarlo, si no lo encuentra escribe en la consola
+                    mi = 0;
+                    phiobj = abs(r.vecphi(i));
+                    for j = 1:length(phi) - 1
+                        if phi(j) <= phiobj && phiobj <= phi(j+1)
+                            mi = m(j);
+                        end
+                    end
+                    
+                    % Grafica el punto
+                    if mi ~= 0
+                        fprintf('\tphi %e: Momento %f %s\n', phiobj, mi, r.unitloadM);
+                        plot([phiobj, phiobj], [min(m), mi], '--', ...
+                            'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw, ...
+                            'DisplayName', sprintf('\\phi=%.3e', phiobj));
+                        pl = plot([min(phi), phiobj], [mi, mi], '--', ...
+                            'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw);
+                        set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
+                        pl = plot(phiobj, mi, '.', ...
+                            'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw, ...
+                            'MarkerSize', r.vecphiSize);
+                        set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
+                    end
+                    
+                end
+            end
+            
             % Genera la diferencia
             if ~strcmp(r.sapfile, '') && r.sapdiff && ...
-                    (strcmp(r.m, 'x') || strcmp(r.m, 'y') || strcmp(r.m, 't'))
+                    (strcmp(r.m, 'x') || strcmp(r.m, 'y') || strcmp(r.m, 'T'))
                 
                 % Diferencia absoluta
                 plt = figure();
@@ -677,7 +727,7 @@ classdef SectionAnalysis < BaseModel
                     mInt = mxInt;
                 elseif strcmp(r.m, 'x')
                     mInt = myInt;
-                elseif strcmp(r.m, 't')
+                elseif strcmp(r.m, 'T')
                     mInt = sqrt(mxInt.^2+myInt.^2);
                 end
                 
@@ -685,7 +735,7 @@ classdef SectionAnalysis < BaseModel
                 for i = 1:length(phi)
                     mDiff(i) = sapMint(i) - mInt(i);
                 end
-                plot(phi, mDiff, 'k-', 'LineWidth', 1.5);
+                plot(phi, mDiff, 'k-', 'LineWidth', r.linewidth);
                 
                 grid on;
                 grid minor;
@@ -705,7 +755,7 @@ classdef SectionAnalysis < BaseModel
                 hold on;
                 mDiffAbs = (mDiff ./ sapMint) .* 100;
                 mDiffAbs = medfilt1(mDiffAbs, r.medfiltN);
-                plot(phi, mDiffAbs, 'k-', 'LineWidth', 1.5);
+                plot(phi, mDiffAbs, 'k-', 'LineWidth', r.linewidth);
                 grid on;
                 grid minor;
                 if ~strcmp(curvAxis, 'a')
@@ -731,7 +781,7 @@ classdef SectionAnalysis < BaseModel
             plt = figure();
             movegui(plt, 'center');
             set(gcf, 'name', sprintf('P vs \\phi_%s', curvAxis));
-            plot(phi, pInt, '-', 'LineWidth', 1.5);
+            plot(phi, pInt, '-', 'LineWidth', r.linewidth);
             grid on;
             grid minor;
             ylabel(sprintf('Carga axial P (%s)', r.unitloadP));
@@ -760,7 +810,7 @@ classdef SectionAnalysis < BaseModel
             plt = figure();
             movegui(plt, 'center');
             set(gcf, 'name', sprintf('e_0 vs \\phi_%s', curvAxis));
-            plot(phi, pInt, '-', 'LineWidth', 1.5);
+            plot(phi, pInt, '-', 'LineWidth', r.linewidth);
             grid on;
             grid minor;
             ylabel('Deformacion e_0 (-)');
