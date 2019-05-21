@@ -320,8 +320,8 @@ classdef SectionAnalysis < BaseModel
                 angle = 0;
             end
             
-            phix = phi .* cos(angle /180 * pi());
-            phiy = phi .* sin(angle /180 * pi());
+            phix = phi .* cos(-angle /180 * pi());
+            phiy = phi .* sin(-angle /180 * pi());
             [defTotal, mxInt, myInt, pInt, err, iters, jacIter] = ...
                 obj.calc_e0M(section, p, phix, phiy, varargin{:}, ...
                 'calcE0Mmode', 'angle', 'calcE0Mangle', angle, ...
@@ -755,7 +755,7 @@ classdef SectionAnalysis < BaseModel
                     xlabel(sprintf('Curvatura \\phi (%s)', r.unitlength));
                 end
                 ylabel(sprintf('Diferencia momento %s (%s)', mAxis, r.unitloadM));
-                title('Diferencia momento absoluta');
+                title({'Diferencia momento absoluta', secName});
                 xlim([min(phi), max(phi)]);
                 
                 % Diferencia relativa
@@ -774,7 +774,7 @@ classdef SectionAnalysis < BaseModel
                     xlabel(sprintf('Curvatura \\phi (%s)', r.unitlength));
                 end
                 ylabel('Diferencia momento (%)');
-                title('Diferencia momento relativa');
+                title({'Diferencia momento relativa', secName});
                 xlim([min(phi), max(phi)]);
                 
             end

@@ -728,6 +728,10 @@ classdef SectionDesigner < BaseModel
             %   axisSize            Largo de los ejes
             %   axisTextSize        Altura texto ejes
             %   axisTextWeight      Tipo de texto ejes
+            %   axisXColor          Color eje x
+            %   axisXText           Texto eje x
+            %   axisYColor          Color eje y
+            %   axisYText           Texto eje y
             %   center              Muestra o no el centroide
             %   centerColor         Color del centroide
             %   centerLineWidth     Ancho de linea del centroide
@@ -751,6 +755,10 @@ classdef SectionDesigner < BaseModel
             p.addOptional('axisSize', 0.15);
             p.addOptional('axisTextSize', 12);
             p.addOptional('axisTextWeight', 'bold');
+            p.addOptional('axisXColor', [1, 0, 0]);
+            p.addOptional('axisXText', 'x');
+            p.addOptional('axisYColor', [0, 1, 0]);
+            p.addOptional('axisYText', 'y');
             p.addOptional('center', true);
             p.addOptional('centerColor', [0, 0, 0]);
             p.addOptional('centerLineWidth', 2);
@@ -893,9 +901,9 @@ classdef SectionDesigner < BaseModel
                 p1 = [gx, gy];
                 p2 = [gx + la, gy];
                 dp = p2 - p1;
-                pl = quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [1, 0, 0]);
+                pl = quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', r.axisXColor);
                 set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
-                text(p2(1)-0.05*la, p2(2)+0.20*la, 'x', 'Color', [1, 0, 0], ...
+                text(p2(1)-0.05*la, p2(2)+0.20*la, r.axisXText, 'Color', r.axisXColor, ...
                     'FontWeight', r.axisTextWeight, 'FontSize', r.axisTextSize, ...
                     'HorizontalAlignment', 'center');
                 
@@ -903,9 +911,9 @@ classdef SectionDesigner < BaseModel
                 p1 = [gx, gy];
                 p2 = [gx, gy + la];
                 dp = p2 - p1;
-                pl = quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', [0, 1, 0]);
+                pl = quiver(p1(1), p1(2), dp(1), dp(2), 0, 'Color', r.axisYColor);
                 set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
-                text(p2(1)+0.15*la, p2(2), 'y', 'Color', [0, 1, 0], ...
+                text(p2(1)+0.15*la, p2(2), r.axisYText, 'Color', r.axisYColor, ...
                     'FontWeight', r.axisTextWeight, 'FontSize', r.axisTextSize, ...
                     'HorizontalAlignment', 'center');
                 
@@ -1514,7 +1522,7 @@ classdef SectionDesigner < BaseModel
             fprintf('\t\tphiy: %e (1/%s)\n', phiy, r.unitlength);
             if strcmp(r.mode, 'a')
                 ra = r.angle * pi() / 180;
-                aphi = (phix + phiy) / (cos(ra) + sin(ra));
+                aphi = (phix + phiy) / (cos(-ra) + sin(-ra));
                 fprintf('\t\tphi: %e (1/%s)\n', aphi, r.unitlength);
             end
             
@@ -1526,25 +1534,6 @@ classdef SectionDesigner < BaseModel
             fprintf('\t\tP axial: %.2f %s\n', p*r.factorP, r.unitloadP);
             fprintf('\t\tMx: %.2f %s\n', mx*r.factorM, r.unitloadM);
             fprintf('\t\tMy: %.2f %s\n', my*r.factorM, r.unitloadM);
-            
-            % Genera el titulo
-            if strcmp(r.type, 'stress')
-                if strcmp(r.mode, 'xy')
-                    plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
-                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
-                else
-                    plotTitle = {sprintf('%s  -  Angulo %.1f  -  Esfuerzos i=%d', obj.getName(), r.angle, r.i), ...
-                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
-                end
-            elseif strcmp(r.type, 'strain')
-                if strcmp(r.mode, 'xy')
-                    plotTitle = {sprintf('%s  -  Deformaciones i=%d', obj.getName(), r.i), ...
-                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
-                else
-                    plotTitle = {sprintf('%s  -  Angulo %.1f  -  Deformaciones i=%d', obj.getName(), r.angle, r.i), ...
-                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy)};
-                end
-            end
             
             if length(e0) ~= 1
                 error('Solo se puede graficar un punto de e0,phix/y, no un vector');
@@ -1708,7 +1697,6 @@ classdef SectionDesigner < BaseModel
                 ylabel(h, '\epsilon (-)');
             end
             view(r.Az, r.EI);
-            title(plotTitle);
             
             % Modifica los ejes para dejar la misma escala
             plotLimsMargin(r.limMargin);
@@ -1729,11 +1717,35 @@ classdef SectionDesigner < BaseModel
                     flim(1), flim(2));
             end
             
+            % Genera el titulo
+            if strcmp(r.type, 'stress')
+                if strcmp(r.mode, 'xy')
+                    plotTitle = {sprintf('%s  -  Esfuerzos i=%d', obj.getName(), r.i), ...
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy), ...
+                        sprintf('\\sigma_{max}: %.3e  /  \\sigma_{min}: %.3e', flim(2), flim(1))};
+                else
+                    plotTitle = {sprintf('%s  -  Angulo %.1f  -  Esfuerzos i=%d', obj.getName(), r.angle, r.i), ...
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy), ...
+                        sprintf('\\sigma_{max}: %.3e  /  \\sigma_{min}: %.3e', flim(2), flim(1))};
+                end
+            elseif strcmp(r.type, 'strain')
+                if strcmp(r.mode, 'xy')
+                    plotTitle = {sprintf('%s  -  Deformaciones i=%d', obj.getName(), r.i), ...
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy), ...
+                        sprintf('\\epsilon_{max}: %.3e  /  \\epsilon_{min}: %.3e', flim(2), flim(1))};
+                else
+                    plotTitle = {sprintf('%s  -  Angulo %.1f  -  Deformaciones i=%d', obj.getName(), r.angle, r.i), ...
+                        sprintf('e_0: %.3e  /  \\phi_x: %.3e  /  \\phi_y: %.3e', e0, phix, phiy), ...
+                        sprintf('\\epsilon_{max}: %.3e  /  \\epsilon_{min}: %.3e', flim(2), flim(1))};
+                end
+            end
+            title(plotTitle);
+            
             % Actualiza el grafico
             drawnow();
             dispMCURV();
             
-        end
+        end % plotStrainStress function
         
     end % private methods
     

@@ -33,8 +33,8 @@ bw = 300;
 d = 125;
 bw2 = 500;
 increments = 100;
-showSap = false; % En sap P=0
-showST = false; % Muestra esfuerzo deformacion
+showSap = true; % En sap P=0
+showST = true; % Muestra esfuerzo deformacion
 
 % Genera la seccion
 if strcmp(caseNum, '1')
@@ -47,7 +47,7 @@ if strcmp(caseNum, '1')
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = linspace(0, 0, increments)';
     curv = 3.2e-5;
-    curvang = -90;
+    curvang = 90; % Con respecto al eje y
     iDef3 = 46; % Posicion deformacion a 0.003
     phiDef3 = -1.454545e-05;
     iDef8 = 0; % Posicion deformacion a 0.008
@@ -62,11 +62,11 @@ elseif strcmp(caseNum, '2')
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
     p = ones(increments, 1) .* 9000 * 1000 * ~showSap; % N
     if showSap % P=0
-        curv = 3.7e-5;
+        curv = 4e-5;
     else
         curv = 5e-6;
     end
-    curvang = -90;
+    curvang = 90; % Con respecto al eje y
     iDef3 = 47; % Posicion deformacion a 0.003
     phiDef3 = -2.323232e-06;
     iDef8 = 66; % Posicion deformacion a 0.008
@@ -85,7 +85,7 @@ elseif strcmp(caseNum, '3')
     else
         curv = 3.2e-5;
     end
-    curvang = -90;
+    curvang = 90; % Con respecto al eje y
     iDef3 = 6; % Posicion deformacion a 0.003
     phiDef3 = -1.616162e-06;
     iDef8 = 22; % Posicion deformacion a 0.008
@@ -105,7 +105,7 @@ elseif strcmp(caseNum, '4.1')
     else
         curv = 3.2e-5;
     end
-    curvang = -90;
+    curvang = -90; % Con respecto al eje y
     iDef3 = 7; % Posicion deformacion a 0.003
     phiDef3 = -1.939394e-06;
     iDef8 = 33; % Posicion deformacion a 0.008
@@ -125,7 +125,7 @@ elseif strcmp(caseNum, '4.2')
     else
         curv = 4e-5;
     end
-    curvang = 90;
+    curvang = -90; % Con respecto al eje y
     iDef3 = 38; % Posicion deformacion a 0.003
     phiDef3 = 1.494949e-05;
     iDef8 = 0; % Posicion deformacion a 0.008
@@ -148,7 +148,7 @@ if showSap
     analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
         'sapfile', sprintf('test/section/mcurv-sap2000/wallT%s_%d.txt', caseNum, curvang), ...
         'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
-        'sapdiff', true, 'vecphi', [phiDef3, phiDef8], 'vecphiColor', {'r', 'k'});
+        'sapdiff', true, 'vecphi', [phiDef3, phiDef8] .* ~showSap, 'vecphiColor', {'r', 'k'});
 else
     analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
         'vecphi', [phiDef3, phiDef8], 'vecphiColor', {'r', 'k'});
@@ -156,7 +156,7 @@ end
 
 % Grafica tension y deformacion para deformacion de 0.003 y 0.008 si es que
 % aplica
-if showST
+if showST && ~showSap
     analysis.plotStrain(iDef3);
     analysis.plotStress(iDef3);
     if iDef8 ~= 0
