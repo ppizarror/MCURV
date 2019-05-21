@@ -49,6 +49,7 @@ La documentación del proyecto se puede encontrar en [https://ppizarror.com/MCUR
 | ![CINTAC-H](https://ppizarror.com/resources/images/mcurv/cintac-model1.png)  | ![CINTAC-H](https://ppizarror.com/resources/images/mcurv/cintac-model2.png) |
 | ![BOXBEAM](https://ppizarror.com/resources/images/mcurv/boxbeam-1.png)  | ![BOXBEAM](https://ppizarror.com/resources/images/mcurv/boxbeam-2.png) |
 | ![WALL-T](https://ppizarror.com/resources/images/mcurv/wallt-1.png)  | ![ADVANCED-SHAPES](https://ppizarror.com/resources/images/mcurv/wallt-2.png) |
+| ![CIRCLE](https://ppizarror.com/resources/images/mcurv/circle-1.png)  | ![CIRCLE](https://ppizarror.com/resources/images/mcurv/circle-2.png) |
 
 ## Autor
 
