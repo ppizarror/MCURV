@@ -2,11 +2,28 @@ Calcula diagramas de momento curvatura de secciones de cualquier geometría usan
 
 ## Materiales incorporados
 
-- Material genérico (Por archivo)
-- Acero con endurecimiento bilineal
-- Acero modelo Mander et al. (1984)
-- Concreto, modelo Hognestad
-- Concreto, modelo Hognestad modificado (No confinado)
+- Material genérico (*GenericMaterial*)
+- Acero con endurecimiento bilineal (*ElastoplasticSteel*)
+- Acero modelo Mander et al. (*ManderSteel*)
+- Concreto, modelo Hognestad (*HognestadConcrete*)
+- Concreto, modelo Hognestad modificado (*HognestadModifiedConcrete*)
+
+## Definición geométrica
+
+El generador de secciones (*SectionDesigner*) permite añadir los sigientes componentes:
+
+- Área finita (*addFiniteArea*)
+- Cuadrado (*addDiscreteSquare*)
+- Perfil angular (*addDiscreteLChannel*)
+- Perfil cajón cuadrado (*addDiscreteSquareChannel*)
+- Perfil cajón rectangular (*addDiscreteBoxChannel*)
+- Perfil doble T (*addDiscreteISection*)
+- Perfil H (*addDiscreteHSection*)
+- Perfil T (*addDiscreteHSection.
+- Rectángulo (*addDiscreteRect*)
+- Sección canal (*addDiscreteChannel*)
+- Sección circular (*addDiscreteCircle*)
+- Sección tubular (*addDiscreteTubular*)
 
 ## Documentación
 
