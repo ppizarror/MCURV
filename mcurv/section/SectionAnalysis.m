@@ -320,8 +320,8 @@ classdef SectionAnalysis < BaseModel
                 angle = 0;
             end
             
-            phix = phi .* cos(-angle /180 * pi());
-            phiy = phi .* sin(-angle /180 * pi());
+            phix = phi .* cos(-angle/180*pi());
+            phiy = phi .* sin(-angle/180*pi());
             [defTotal, mxInt, myInt, pInt, err, iters, jacIter] = ...
                 obj.calc_e0M(section, p, phix, phiy, varargin{:}, ...
                 'calcE0Mmode', 'angle', 'calcE0Mangle', angle, ...
@@ -337,7 +337,7 @@ classdef SectionAnalysis < BaseModel
             end
             plt = figure();
             movegui(plt, 'center');
-            set(gcf, 'name', 'Momento curvatura');
+            set(gcf, 'name', 'Variacion numero iteraciones');
             hold on;
             secName = obj.lastsole0p{8}.getName();
             niter = obj.lastsole0p{9};
@@ -377,6 +377,7 @@ classdef SectionAnalysis < BaseModel
             %   unitloadP       Unidad de carga axial
             %   vecphi          Vector phi para interpolar
             %   vecphiColor     Cell phi colores
+            %   vecphiInterp    Interpolacion, max,min,med,sqrt
             %   vecphiLw        Ancho de linea
             %   vecphiSize      Porte puntos
             
@@ -388,7 +389,7 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('legend', 'southeast');
             p.addOptional('limPos', true)
             p.addOptional('linewidth', 1.5);
-            p.addOptional('m', 'T'); % Cual eje usar para el momento: 'all','x','y','T'
+            p.addOptional('m', 'T'); % Cual eje usar para el momento: all,x,y,T
             p.addOptional('medfilt', true); % Aplica medfilt
             p.addOptional('medfiltN', 3);
             p.addOptional('plot', 'all');
@@ -404,6 +405,7 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('unitloadP', 'kN'); % Unidad de carga
             p.addOptional('vecphi', []); % Vector phi para interpolar
             p.addOptional('vecphiColor', {}); % Cell phi colores
+            p.addOptional('vecphiInterp', 'min');
             p.addOptional('vecphiLw', 0.5);
             p.addOptional('vecphiSize', 15);
             parse(p, varargin{:});
@@ -437,6 +439,7 @@ classdef SectionAnalysis < BaseModel
             if r.medfilt
                 mxInt = medfilt1(mxInt, r.medfiltN);
                 myInt = medfilt1(myInt, r.medfiltN);
+                pInt = medfilt1(pInt, r.medfiltN);
             end
             
             % Indica si se grafico
@@ -706,7 +709,17 @@ classdef SectionAnalysis < BaseModel
                     end
                     for j = 1:length(phi) - 1
                         if phi(j) <= phiobj && phiobj <= phi(j+1)
-                            mi = min(m(j), m(j+1));
+                            if strcmp(r.vecphiInterp, 'min')
+                                mi = min(m(j), m(j+1));
+                            elseif strcmp(r.vecphiInterp, 'max')
+                                mi = max(m(j), m(j+1));
+                            elseif strcmp(r.vecphiInterp, 'med')
+                                mi = 0.5 * (m(j) + m(j+1));
+                            elseif strcmp(r.vecphiInterp, 'sqrt')
+                                mi = sqrt((m(j)^2 + m(j+1)^2)/2);
+                            else
+                                error('Interpolacion vecphiInterp desconocida, valores posibles: min,max,med,sqrt');
+                            end
                         end
                     end
                     
@@ -715,7 +728,7 @@ classdef SectionAnalysis < BaseModel
                         fprintf('\tphi %e: Momento %f %s\n', phiobj, mi, r.unitloadM);
                         plot([phiobj, phiobj], [mmin, mi], '--', ...
                             'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw, ...
-                            'DisplayName', sprintf('\\phi_%d=%.3e', kphi, phiobj));
+                            'DisplayName', sprintf('\\phi_%d=%.2e, M_%d=%.1f', kphi, phiobj, kphi, mi));
                         pl = plot([min(phi), phiobj], [mi, mi], '--', ...
                             'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw);
                         set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');

@@ -33,9 +33,10 @@ b = 4000;
 bw = 300;
 d = 125;
 bw2 = 500;
-increments = 100;
+increments = 100; % Incrementos de analisis, recomendado 100
 showSap = false; % En sap P=0
 showST = true; % Muestra esfuerzo deformacion
+vecInt = 'min'; % Interpolacion vectores phi
 
 % Genera la seccion
 if strcmp(caseNum, '1')
@@ -46,6 +47,7 @@ if strcmp(caseNum, '1')
     wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, steel);
     wallt.addFiniteArea(-h/2+d, b/2-d, As/2, steel);
     wallt.addFiniteArea(h/2-d, 0, Asp, steel);
+    increments = 200;
     p = linspace(0, 0, increments)';
     if showSap % P=0
         curv = 3.2e-5;
@@ -53,10 +55,28 @@ if strcmp(caseNum, '1')
         curv = 5e-5;
     end
     curvang = 90; % Con respecto al eje y
-    iDef3 = 30; % Posicion deformacion a 0.003
-    phiDef3 = 1.464646e-05;
+    iDef3 = 60; % Posicion deformacion a 0.003
+    phiDef3 = -1.482412e-05;
     iDef8 = 0; % Posicion deformacion a 0.008
     phiDef8 = Inf;
+elseif strcmp(caseNum, '1.1') % Realizado para comparacion con calculo numerico
+    As = 4000;
+    Asp = 4000;
+    wallt.addDiscreteRect((-h + bw)/2, 0, bw, b, 10, 1, concreteA);
+    wallt.addDiscreteRect(bw/2, 0, h-bw, bw, 90, 1, concreteA);
+    wallt.addFiniteArea(-h/2+d, -b/2+d, As/2, steel);
+    wallt.addFiniteArea(-h/2+d, b/2-d, As/2, steel);
+    wallt.addFiniteArea(h/2-d, 0, Asp, steel);
+    increments = 500;
+    p = linspace(0, 0, increments)';
+    showSap = false;
+    curv = 3e-6;
+    curvang = 90; % Con respecto al eje y
+    iDef3 = 0;
+    phiDef3 = -8.65*10^(-8); % Obtenidos del calculo manual
+    iDef8 = 0;
+    phiDef8 = -5.30*10^(-7);
+    vecInt = 'max';
 elseif strcmp(caseNum, '2')
     As = 8000;
     Asp = 8000;
@@ -151,8 +171,10 @@ analysis.calc_e0M_angle(wallt, p, phi, curvang, 'ppos', [0, 0]);
 % Grafica tension y deformacion para deformacion de 0.003 y 0.008 si es que
 % aplica
 if showST && ~showSap
-    analysis.plotStrain(iDef3);
-    analysis.plotStress(iDef3);
+    if iDef3 ~= 0
+        analysis.plotStrain(iDef3);
+        analysis.plotStress(iDef3);
+    end
     if iDef8 ~= 0
         analysis.plotStrain(iDef8);
         analysis.plotStress(iDef8);
@@ -164,10 +186,11 @@ if showSap
     analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
         'sapfile', sprintf('test/section/mcurv-sap2000/wallT%s_%d.txt', caseNum, curvang), ...
         'sapcolumnPhi', 10, 'sapcolumnM', 11, 'sapfactorM', 1e-6, ...
-        'sapdiff', true, 'vecphi', [phiDef3, phiDef8] .* ~showSap, 'vecphiColor', {'r', 'k'});
+        'sapdiff', true);
 else
     analysis.plot_e0M('plot', 'mphi', 'factorM', 1e-6, 'm', 'T', ...
-        'vecphi', [phiDef3, phiDef8], 'vecphiColor', {'r', 'k'});
+        'vecphi', [phiDef3, phiDef8], 'vecphiColor', {'r', 'k'}, ...
+        'vecphiInterp', vecInt);
     analysis.plot_e0M('plot', 'pphi');
 end
 
