@@ -33,12 +33,12 @@ La documentación del proyecto se puede encontrar en [https://ppizarror.com/MCUR
 
 | Modelo | Resultado |
 |:---:|:---:|
-| ![ADVANCED-SHAPES](https://ppizarror.com/resources/images/mcurv/advshapes-1.png)  | ![ADVANCED-SHAPES](https://ppizarror.com/resources/images/mcurv/advshapes-2.png) |
-| ![SIMPLE-BEAM](https://ppizarror.com/resources/images/mcurv/simplebeam-1.png)  | ![SIMPLE-BEAM](https://ppizarror.com/resources/images/mcurv/simplebeam-2.png) |
-| ![CINTAC-H](https://ppizarror.com/resources/images/mcurv/cintac-model1.png)  | ![CINTAC-H](https://ppizarror.com/resources/images/mcurv/cintac-model2.png) |
-| ![BOXBEAM](https://ppizarror.com/resources/images/mcurv/boxbeam-1.png)  | ![BOXBEAM](https://ppizarror.com/resources/images/mcurv/boxbeam-2.png) |
-| ![WALL-T](https://ppizarror.com/resources/images/mcurv/wallt-1.png)  | ![ADVANCED-SHAPES](https://ppizarror.com/resources/images/mcurv/wallt-2.png) |
-| ![CIRCLE](https://ppizarror.com/resources/images/mcurv/circle-1.png)  | ![CIRCLE](https://ppizarror.com/resources/images/mcurv/circle-2.png) |
+| ![ADVANCED-SHAPES](https://res.ppizarror.com/images/mcurv/advshapes-1.png)  | ![ADVANCED-SHAPES](https://res.ppizarror.com/images/mcurv/advshapes-2.png) |
+| ![SIMPLE-BEAM](https://res.ppizarror.com/images/mcurv/simplebeam-1.png)  | ![SIMPLE-BEAM](https://res.ppizarror.com/images/mcurv/simplebeam-2.png) |
+| ![CINTAC-H](https://res.ppizarror.com/images/mcurv/cintac-model1.png)  | ![CINTAC-H](https://res.ppizarror.com/images/mcurv/cintac-model2.png) |
+| ![BOXBEAM](https://res.ppizarror.com/images/mcurv/boxbeam-1.png)  | ![BOXBEAM](https://res.ppizarror.com/images/mcurv/boxbeam-2.png) |
+| ![WALL-T](https://res.ppizarror.com/images/mcurv/wallt-1.png)  | ![ADVANCED-SHAPES](https://res.ppizarror.com/images/mcurv/wallt-2.png) |
+| ![CIRCLE](https://res.ppizarror.com/images/mcurv/circle-1.png)  | ![CIRCLE](https://res.ppizarror.com/images/mcurv/circle-2.png) |
 
 ## Autor
 
