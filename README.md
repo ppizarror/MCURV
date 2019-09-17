@@ -1,7 +1,5 @@
 <h1 align="center">
-  <a href="https://github.ppizarror.com/MCURV/" title="MCURV">
-    <img alt="MCURV" src="https://res.ppizarror.com/other/matlab.png" width="200px" height="200px" />
-  </a>
+  <img alt="MCURV" src="https://res.ppizarror.com/other/matlab.png" width="200px" height="200px" />
   <br /><br />
   MCURV</h1>
 <p align="center">Genera el diagrama de momento curvatura para secciones prismáticas de cualquier tipo de material, sometidas a un momento y compresión axial</p>
