@@ -28,7 +28,7 @@ El generador de secciones (*SectionDesigner*) permite añadir los sigientes comp
 - Perfil cajón rectangular (*addDiscreteBoxChannel*)
 - Perfil doble T (*addDiscreteISection*)
 - Perfil H (*addDiscreteHSection*)
-- Perfil T (*addDiscreteHSection.
+- Perfil T (*addDiscreteHSection*)
 - Rectángulo (*addDiscreteRect*)
 - Sección canal (*addDiscreteChannel*)
 - Sección circular (*addDiscreteCircle*)
@@ -51,7 +51,7 @@ La documentación del proyecto se puede encontrar en [https://ppizarror.com/MCUR
 
 ## Autor
 
-[Pablo Pizarro R.](https://ppizarror.com) | 2019
+[Pablo Pizarro R.](https://ppizarror.com) | 2019 - 2020
 
 ## Licencia
 
