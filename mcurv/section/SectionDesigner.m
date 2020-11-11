@@ -313,7 +313,7 @@ classdef SectionDesigner < BaseModel
             % Itera segun el numero de particiones
             dh = h / ny; % Altura de cada segmento
             for i = 1:ny
-                bi = sqrt((1 - (2 * (dh * (i - 0.5) - b) / h)^2)*(b / 2)^2); % Ancho
+                bi = sqrt(1-(h / 2 - dh * (i - 0.5))^2/((h / 2)^2)) * b; % Ec. elipse
                 obj.addDiscreteRect(xc, yc+-h/2+dh*i, bi, dh, nx, 1, material, varargin{:}, 'xco', xc, 'yco', yc);
             end
             

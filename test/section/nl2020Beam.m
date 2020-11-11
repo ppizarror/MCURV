@@ -13,7 +13,11 @@ concrete = HognestadConcrete('Hormigon', 25, 0.0025);
 typeBeam = 1;
 
 if typeBeam == 1
-    simplebeam.addDiscreteEllipseRect(0, 0, 350, 700, 1, 3, concrete);
+    simplebeam.addDiscreteEllipseRect(0, 0, 350, 700, 1, 100, concrete);
+    simplebeam.addFiniteArea(350/4-55, -350+55, 1050, steel);
+    simplebeam.addFiniteArea(-350/4+55, -350+55, 1050, steel);
+    simplebeam.addFiniteArea(350/4-55, 350-55, 1050, steel);
+    simplebeam.addFiniteArea(-350/4+55, 350-55, 1050, steel);
 elseif typeBeam == 2
     simplebeam.addDiscreteRect(0, 0, 350, 700, 1, 100, concrete);
     simplebeam.addFiniteArea(350/2-55, -350+55, 1050, steel);
@@ -47,7 +51,6 @@ simplebeam.disp();
 
 % Grafica la seccion
 simplebeam.plot('showdisc', true, 'legend', true);
-return
 
 % Ejecuta un analisis
 analysis = SectionAnalysis('Analisis', 100, 0.0001);
