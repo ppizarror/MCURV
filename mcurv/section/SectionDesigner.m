@@ -85,6 +85,8 @@ classdef SectionDesigner < BaseModel
             %   translatex      Punto de translacion del eje x
             %   translatey      Punto de translacion del eje y
             %   transparency    Transparencia de la seccion
+            %   xco             Centro de giro en x
+            %   yco             Centro de giro en y
             
             if nargin < 8
                 error('Numero de parametros incorrectos, uso: %s', ...
@@ -95,7 +97,7 @@ classdef SectionDesigner < BaseModel
             end
             
             if nx == 0 || ny == 0
-                error('La discretizacion del elemento no puede ser nula');
+                error('La discretizacion del elemento no puede ser igual cero');
             end
             
             if b < 0 || h < 0
@@ -270,6 +272,52 @@ classdef SectionDesigner < BaseModel
             obj.addDiscreteRect(xc, yc, L, L, n, n, material, varargin{:}, 'xco', xc, 'yco', yc);
             
         end % addDiscreteSquare function
+        
+        function addDiscreteEllipseRect(obj, xc, yc, b, h, nx, ny, material, varargin)
+            % addDiscreteEllipse: Agrega una seccion elipse discreta
+            % delimitada por un rectangulo. Orientacion vertical. Usar
+            % 'rotation' para rotar la seccion.
+            %
+            % Parametros requeridos:
+            %   xc              Centro de gravedad
+            %   yc              Centro de gravedad
+            %   b               Ancho del rectangulo contenedor
+            %   h               Alto del rectangulo contenedor
+            %   nx              Discretizacion en el eje x
+            %   ny              Discretizacion en el eje y
+            %   material        Materialidad de la seccion
+            %
+            % Parametros opcionales:
+            %   color           Color del area
+            %   linewidth       Ancho de linea de la seccion
+            %   rotation        Angulo de rotacion en grados
+            %   translatex      Punto de translacion del eje x
+            %   translatey      Punto de translacion del eje y
+            %   transparency    Transparencia de la seccion
+            
+            if nargin < 8
+                error('Numero de parametros incorrectos, uso: %s', ...
+                    'addDiscreteEllipseRect(xc,yc,b,h,nx,ny,material,varargin)');
+            end
+            
+            if h <= 0
+                error('Altura del rectangulo contenedor invalido');
+            end
+            if b <= 0
+                error('Ancho del rectangulo contenedor invalido');
+            end
+            if ny <= 1
+                error('Numero de discretizacion en la vertical incorrecto, debe ser mayor a 1');
+            end
+            
+            % Itera segun el numero de particiones
+            dh = h / ny; % Altura de cada segmento
+            for i = 1:ny
+                bi = sqrt((1 - (2 * (dh * (i - 0.5) - b) / h)^2)*(b / 2)^2); % Ancho
+                obj.addDiscreteRect(xc, yc+-h/2+dh*i, bi, dh, nx, 1, material, varargin{:}, 'xco', xc, 'yco', yc);
+            end
+            
+        end % addDiscreteEllipseRect function
         
         function addDiscreteISection(obj, xc, yc, bi, bs, h, ti, ts, tw, nx, ny, material, varargin)
             % addDiscreteISection: Agrega una seccion I discreta
@@ -590,7 +638,7 @@ classdef SectionDesigner < BaseModel
             
             % Parametriza el circulo
             ang = linspace(0, pi()/2, r.ntheta);
-            nrad = ceil((rf - ri + 2*dd)/dd);
+            nrad = ceil((rf - ri + 2 * dd)/dd);
             if r.nrad ~= 0
                 nrad = r.nrad;
             end
