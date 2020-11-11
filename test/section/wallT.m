@@ -73,9 +73,9 @@ elseif strcmp(caseNum, '1.1') % Realizado para comparacion con calculo numerico
     curv = 3e-6;
     curvang = 90; % Con respecto al eje y
     iDef3 = 0;
-    phiDef3 = -8.65*10^(-8); % Obtenidos del calculo manual
+    phiDef3 = -8.65 * 10^(-8); % Obtenidos del calculo manual
     iDef8 = 0;
-    phiDef8 = -5.30*10^(-7);
+    phiDef8 = -5.30 * 10^(-7);
     vecInt = 'max';
 elseif strcmp(caseNum, '2')
     As = 8000;
