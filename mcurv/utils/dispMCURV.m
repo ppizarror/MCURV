@@ -3,6 +3,5 @@ function dispMCURV()
 % metodos usados por las clases de MCURV
 
 fprintf('---------------------------------------------------------------------------\n');
-fprintf('\n');
 
 end
