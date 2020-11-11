@@ -97,7 +97,7 @@ classdef SectionDesigner < BaseModel
             end
             
             if nx == 0 || ny == 0
-                error('La discretizacion del elemento no puede ser igual cero');
+                error('La discretizacion del elemento no puede ser igual a cero');
             end
             
             if b < 0 || h < 0
