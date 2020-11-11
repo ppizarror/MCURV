@@ -23,6 +23,7 @@ El generador de secciones (*SectionDesigner*) permite añadir los sigientes comp
 
 - Área finita (*addFiniteArea*)
 - Cuadrado (*addDiscreteSquare*)
+- Elipse inscrita en rectángulo (*addDiscreteEllipseRect*)
 - Perfil angular (*addDiscreteLChannel*)
 - Perfil cajón cuadrado (*addDiscreteSquareChannel*)
 - Perfil cajón rectangular (*addDiscreteBoxChannel*)
