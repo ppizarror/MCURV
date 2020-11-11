@@ -2,7 +2,7 @@
 % Año 2020
 
 % Viga simple
-simplebeam = SectionDesigner('Viga Simple');
+simplebeam = SectionDesigner();
 
 % Genera los materiales
 steel = ElastoplasticSteel('Acero', 420, 200000, 2000, 0.2);

@@ -1421,15 +1421,15 @@ classdef SectionDesigner < BaseModel
             [rx, ry] = obj.getGyradius();
             [wx, wy] = obj.getPlasticModuli();
             
-            fprintf('\tCentroide: (%.2f,%.2f)\n', cx, cy);
-            fprintf('\tCentro geometrico: (%.2f,%.2f)\n', gx, gy);
-            fprintf('\tAncho: %.2f\n', sx);
-            fprintf('\tAlto: %.2f\n', sy);
-            fprintf('\tArea: %.2f\n\t\tContinuos: %.2f\n\t\tSingulares: %.2f\n', a, ac, as);
-            fprintf('\tInercia:\n\t\tIx: %e\n\t\tIy: %e\n', ix, iy);
-            fprintf('\tModulo plastico:\n\t\tWx: %e\n\t\tWy: %e\n', wx, wy);
-            fprintf('\tRadio de giro:\n\t\trx: %.3f\n\t\try: %.3f\n', rx, ry);
-            fprintf('\tNumero de elementos: %d\n\t\tContinuos: %d\n\t\tSingulares: %d\n', ...
+            fprintf('\tCentroide:\t\t\t(%.2f,%.2f)\n', cx, cy);
+            fprintf('\tCentro geometrico:\t(%.2f,%.2f)\n', gx, gy);
+            fprintf('\tAncho:\t%.2f\n', sx);
+            fprintf('\tAlto:\t%.2f\n', sy);
+            fprintf('\tArea:\t%.2f\n\t\tContinuos:\t%.2f\n\t\tSingulares:\t%.2f\n', a, ac, as);
+            fprintf('\tInercia:\n\t\tIx:\t%e\n\t\tIy:\t%e\n', ix, iy);
+            fprintf('\tModulo plastico:\n\t\tWx:\t%e\n\t\tWy:\t%e\n', wx, wy);
+            fprintf('\tRadio de giro:\n\t\trx:\t%.3f\n\t\try:\t%.3f\n', rx, ry);
+            fprintf('\tNumero de elementos: %d\n\t\tContinuos:\t\t%d\n\t\tSingulares:\t\t%d\n', ...
                 obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
             
             % Obtiene los materiales
@@ -1448,10 +1448,10 @@ classdef SectionDesigner < BaseModel
             
             fprintf('\tMateriales diferentes: %d\n', length(matsK));
             for i = 1:length(matsK)
-                fprintf('\t\t%d %s\n', matsV{i}, matsK{i});
+                fprintf('\t\t(%d)\t%d\t%s\n', i, matsV{i}, matsK{i});
             end % for i
             
-            fprintf('\tLimites de la seccion:\n\t\tx: (%.2f,%.2f)\n\t\ty: (%.2f,%.2f)\n', ...
+            fprintf('\tLimites de la seccion:\n\t\tx:\t(%.2f,%.2f)\n\t\ty:\t(%.2f,%.2f)\n', ...
                 xmin, xmax, ymin, ymax);
             
             dispMCURV();
