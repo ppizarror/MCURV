@@ -88,7 +88,7 @@ classdef SectionAnalysis < BaseModel
                 end
             end
             
-            fprintf('Calculando e0 y M dado arreglo de P y phix,phiy:\n');
+            fprintf('Calculando e0 y M dado arreglo de P y phix, phiy:\n');
             fprintf('\tSeccion: %s\n', section.getName());
             
             % Actualiza propiedades
@@ -388,7 +388,7 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('factorP', 1e-3); % Si se usan N a kN
             p.addOptional('legend', 'southeast');
             p.addOptional('limPos', true)
-            p.addOptional('linewidth', 1.5);
+            p.addOptional('linewidth', 1);
             p.addOptional('m', 'T'); % Cual eje usar para el momento: all,x,y,T
             p.addOptional('medfilt', true); % Aplica medfilt
             p.addOptional('medfiltN', 3);
