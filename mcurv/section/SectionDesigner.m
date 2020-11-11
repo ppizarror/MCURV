@@ -70,8 +70,8 @@ classdef SectionDesigner < BaseModel
             % con centro (xc,yc) altura h, ancho b y una materialidad
             %
             % Parametros requeridos:
-            %   xc              Centro de gravedad
-            %   yc              Centro de gravedad
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
             %   b               Ancho
             %   h               Alto
             %   nx              Numero de discretizaciones en eje x
@@ -251,8 +251,8 @@ classdef SectionDesigner < BaseModel
             % con centro (xc,yc) largo l y una materialidad
             %
             % Parametros requeridos:
-            %   xc              Centro de gravedad
-            %   yc              Centro de gravedad
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
             %   L               Largo del cuadrado
             %   n               Numero de discretizaciones en eje x/y
             %   material        Materialidad de la seccion
@@ -279,8 +279,8 @@ classdef SectionDesigner < BaseModel
             % 'rotation' para rotar la seccion.
             %
             % Parametros requeridos:
-            %   xc              Centro de gravedad
-            %   yc              Centro de gravedad
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
             %   b               Ancho del rectangulo contenedor
             %   h               Alto del rectangulo contenedor
             %   nx              Discretizacion en el eje x
@@ -323,8 +323,8 @@ classdef SectionDesigner < BaseModel
             % addDiscreteISection: Agrega una seccion I discreta
             %
             % Parametros requeridos:
-            %   xc              Centro de gravedad
-            %   yc              Centro de gravedad
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
             %   bi              Ancho del ala inferior
             %   bs              Ancho del ala superior
             %   h               Altura de la seccion
@@ -386,8 +386,8 @@ classdef SectionDesigner < BaseModel
             % addDiscreteHSection: Agrega una seccion H discreta
             %
             % Parametros requeridos:
-            %   xc              Centro de gravedad
-            %   yc              Centro de gravedad
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
             %   b               Ancho del ala
             %   h               Altura de la seccion
             %   tf              Espesor del ala
@@ -416,8 +416,8 @@ classdef SectionDesigner < BaseModel
             % addDiscreteTSection: Agrega una seccion T discreta
             %
             % Parametros requeridos:
-            %   xc              Centro de gravedad
-            %   yc              Centro de gravedad
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
             %   b               Ancho del ala
             %   h               Altura de la seccion
             %   tf              Espesor del ala
@@ -446,15 +446,15 @@ classdef SectionDesigner < BaseModel
             % addDiscreteChannel: Agrega una seccion canal discreta
             %
             % Parametros requeridos:
-            %   xc          Centro de gravedad en x
-            %   yc          Centro de gravedad en y
-            %   b           Ancho del canal
-            %   h           Altura del canal
-            %   tf          Ancho del ala
-            %   tw          Ancho del alma
-            %   nx          Discretizacion en x
-            %   ny          Discretizacion en y
-            %   material    Materialidad de la seccion
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
+            %   b               Ancho del canal
+            %   h               Altura del canal
+            %   tf              Ancho del ala
+            %   tw              Ancho del alma
+            %   nx              Discretizacion en x
+            %   ny              Discretizacion en y
+            %   material        Materialidad de la seccion
             %
             % Parametros opcionales:
             %   color           Color del area
@@ -486,14 +486,14 @@ classdef SectionDesigner < BaseModel
             % discreta
             %
             % Parametros requeridos:
-            %   xc          Centro de gravedad en x
-            %   yc          Centro de gravedad en y
-            %   b           Ancho del canal
-            %   h           Altura del canal
-            %   t           Altura del ala/alma
-            %   nx          Discretizacion en x
-            %   ny          Discretizacion en y
-            %   material    Materialidad de la seccion
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
+            %   b               Ancho del canal
+            %   h               Altura del canal
+            %   t               Altura del ala/alma
+            %   nx              Discretizacion en x
+            %   ny              Discretizacion en y
+            %   material        Materialidad de la seccion
             %
             % Parametros opcionales:
             %   color           Color del area
@@ -529,12 +529,12 @@ classdef SectionDesigner < BaseModel
             % discreta
             %
             % Parametros requeridos:
-            %   xc          Centro de gravedad en x
-            %   yc          Centro de gravedad en y
-            %   L           Largo de la caja
-            %   t           Espesor
-            %   n           Discretizacion en x/y
-            %   material    Materialidad de la seccion
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
+            %   L               Largo de la caja
+            %   t               Espesor
+            %   n               Discretizacion en x/y
+            %   material        Materialidad de la seccion
             %
             % Parametros opcionales:
             %   color           Color del area
@@ -556,14 +556,14 @@ classdef SectionDesigner < BaseModel
             % addDiscreteLChannel: Agrega un perfil L discreto
             %
             % Parametros requeridos:
-            %   xc          Centro de gravedad en x
-            %   yc          Centro de gravedad en y
-            %   b           Ancho del canal
-            %   h           Altura del canal
-            %   t           Ancho del ala/alma
-            %   nx          Discretizacion en x
-            %   ny          Discretizacion en y
-            %   material    Materialidad de la seccion
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
+            %   b               Ancho del canal
+            %   h               Altura del canal
+            %   t               Ancho del ala/alma
+            %   nx              Discretizacion en x
+            %   ny              Discretizacion en y
+            %   material        Materialidad de la seccion
             %
             % Parametros opcionales:
             %   color           Color del area
@@ -596,8 +596,8 @@ classdef SectionDesigner < BaseModel
             % addDiscreteTubular: Crea seccion tubular
             %
             % Parametros requeridos
-            %   xc              Posicion del centro del area en x
-            %   yc              Posicion del centro del area en y
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
             %   ri              Radio interior
             %   re              Radio exterior
             %   n               Discretizacion
@@ -697,8 +697,8 @@ classdef SectionDesigner < BaseModel
             % addDiscreteCircle: Crea seccion circular
             %
             % Parametros requeridos
-            %   xc              Posicion del centro del area en x
-            %   yc              Posicion del centro del area en y
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
             %   r               Radio
             %   n               Discretizacion
             %   material        Material de la seccion
@@ -723,8 +723,8 @@ classdef SectionDesigner < BaseModel
             % addFiniteArea: Agrega un area finita
             %
             % Parametros requeridos:
-            %   xc              Posicion del centro del area en x
-            %   yc              Posicion del centro del area en y
+            %   xc              Posicion del centro en x
+            %   yc              Posicion del centro en y
             %   area            Area
             %   material        Materialidad de la seccion
             %

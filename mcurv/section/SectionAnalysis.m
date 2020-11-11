@@ -37,7 +37,7 @@ classdef SectionAnalysis < BaseModel
             % SectionAnalysis: Constructor de la clase
             %
             % Parametros opcionales:
-            %   showprogress        Muestra el porcentaje de progreso
+            %   showprogress    Muestra el porcentaje de progreso
             
             p = inputParser;
             p.KeepUnmatched = true;
@@ -58,13 +58,13 @@ classdef SectionAnalysis < BaseModel
             % curvaturas
             %
             % Parametros:
-            %   section     Objeto de la seccion de analisis
-            %   P           Arreglo de cargas
-            %   phix        Vector de curvatura en x
-            %   phiy        Vector de curvatura en y
+            %   section         Objeto de la seccion de analisis
+            %   P               Arreglo de cargas
+            %   phix            Vector de curvatura en x
+            %   phiy            Vector de curvatura en y
             %
             % Parametros opcionales:
-            %   ppos        Posicion de la carga, si no se define se deja en el centroide de la seccion
+            %   ppos            Posicion de la carga, si no se define se deja en el centroide de la seccion
             
             tIni = cputime();
             if nargin < 5
@@ -306,7 +306,7 @@ classdef SectionAnalysis < BaseModel
             %   angle           Angulo de analisis de la curvatura (grados)
             %
             % Parametros opcionales:
-            %   ppos        Posicion de la carga, si no se define se deja en el centroide de la seccion
+            %   ppos            Posicion de la carga, si no se define se deja en el centroide de la seccion
             
             if nargin < 5
                 error('Numero de parametros incorrectos, uso: %s', ...
