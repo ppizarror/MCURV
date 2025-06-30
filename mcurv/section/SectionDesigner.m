@@ -48,7 +48,7 @@ classdef SectionDesigner < BaseModel
                 matName = '';
             end
             if nargin < 2
-                terminateOnFailure = true;
+                terminateOnFailure = false;
             end
             obj = obj@BaseModel(matName);
 
