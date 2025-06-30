@@ -23,36 +23,36 @@
 %|______________________________________________________________________|
 
 classdef SectionAnalysis < BaseModel
-    
-    properties(Access = protected)
+
+    properties (Access = protected)
         maxiter % Numero maximo de iteraciones
         tol % Tolerancia del calculo
         lastsole0p % Ultima solucion de e0/P
         showprogress % Muestra el progreso en consola
     end % protected properties
-    
-    methods(Access = public)
-        
+
+    methods (Access = public)
+
         function obj = SectionAnalysis(analysisName, maxiter, tol, varargin)
             % SectionAnalysis: Constructor de la clase
             %
             % Parametros opcionales:
             %   showprogress    Muestra el porcentaje de progreso
-            
+
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('showprogress', true);
             parse(p, varargin{:});
             r = p.Results;
-            
+
             obj = obj@BaseModel(analysisName);
             obj.maxiter = maxiter;
             obj.tol = tol;
             obj.lastsole0p = {};
             obj.showprogress = r.showprogress;
-            
+
         end % SectionAnalysis constructor
-        
+
         function [defTotal, mxInt, myInt, pInt, err, iters, jacIter] = calc_e0M(obj, section, P, phix, phiy, varargin)
             % calc_e0M: Calcula e0 y M dado un arreglo de cargas y
             % curvaturas
@@ -65,21 +65,21 @@ classdef SectionAnalysis < BaseModel
             %
             % Parametros opcionales:
             %   ppos            Posicion de la carga, si no se define se deja en el centroide de la seccion
-            
+
             tIni = cputime();
             if nargin < 5
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'calc_e0M(section,p,phix,phiy,varargin)');
             end
-            
+
             if ~isa(section, 'SectionDesigner')
                 error('Objeto seccion debe heredar de SectionDesigner');
             end
-            
+
             if length(P) ~= length(phix) || length(P) ~= length(phiy)
                 error('Los vectores p, phix, phiy deben tener igual largo');
             end
-            
+
             % Verifica que los vectores sean crecientes
             for i = 2:length(P)
                 if abs(P(i)) < abs(P(i-1)) || abs(phix(i)) < abs(phix(i-1)) || ...
@@ -87,38 +87,38 @@ classdef SectionAnalysis < BaseModel
                     error('Los vectores p, phix, phiy deben ser crecientes en modulo');
                 end
             end
-            
+
             fprintf('Calculando e0 y M dado arreglo de P y phix, phiy:\n');
             fprintf('\tSeccion: %s\n', section.getName());
-            
+
             % Actualiza propiedades
             section.updateProps();
             [px, py] = section.getCentroid();
-            
+
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('ppos', [px, py]);
-            
+
             % Internos
             p.addOptional('calcE0Mangle', '0');
             p.addOptional('calcE0Mmode', 'phixy'); % Puede ser 'phixy','angle'
             p.addOptional('calcE0Mphi', []);
-            
+
             parse(p, varargin{:});
             r = p.Results;
-            
+
             pcentroid = '';
             if r.ppos(1) == px && r.ppos(2) == py
                 pcentroid = ' ubicado en centroide';
             end
-            
+
             fprintf('\tNumero de incrementos: %d\n', length(P));
             fprintf('\tNumero de maximo de iteraciones: %d\n', obj.maxiter);
             fprintf('\tTolerancia maxima: %.3e\n', obj.tol);
-            
+
             fprintf('\tCarga externa posicion: (%.2f,%.2f)%s\n', ...
                 r.ppos(1), r.ppos(2), pcentroid);
-            
+
             if strcmp(r.calcE0Mmode, 'phixy')
                 fprintf('\tCalculando con arreglos de curvatura en x/y\n');
             elseif strcmp(r.calcE0Mmode, 'angle')
@@ -126,7 +126,7 @@ classdef SectionAnalysis < BaseModel
             else
                 error('Modo de calculo invalido');
             end
-            
+
             % Genera el vector de cambio de P
             n = length(P);
             deltaP = zeros(n, 1);
@@ -134,7 +134,7 @@ classdef SectionAnalysis < BaseModel
             for i = 2:n
                 deltaP(i) = P(i) - P(i-1);
             end
-            
+
             % Crea matriz de iteraciones de la deformacion total
             deltaE0Iter = zeros(n, obj.maxiter);
             pE0 = zeros(n, obj.maxiter);
@@ -142,159 +142,198 @@ classdef SectionAnalysis < BaseModel
             defTotal = zeros(n, 1); % Deformacion total para cada [P,phi]
             err = zeros(n, obj.maxiter); % Error de cada iteracion
             iters = zeros(n, 1); % Numero de iteraciones necesitados
-            
+
             % Cargas internas guardadas
-            pInt = zeros(n, 1); % Carga efectiva de cada (P,phi)
-            mxInt = zeros(n, 1); % Momento por cada (P,phi)
-            myInt = zeros(n, 1); % Momento por cada (P,phi)
+            pInt = nan(n, 1); % Carga efectiva de cada (P,phi)
+            mxInt = nan(n, 1); % Momento por cada (P,phi)
+            myInt = nan(n, 1); % Momento por cada (P,phi)
             reversePorcent = ''; % Texto que tiene el porcentaje de avance
-            
+
             % Variable que indica que las iteraciones se hacen con la primera
             % pendiente de la matriz de rigidez
-            usar1JAC = false;
-            
+            use1JAC = false;
+
             % Almacena desde que i-incremento se usa el primer jacobiano
-            usar1JACNITER = 1;
+            use1JACNITER = 1;
             lastjac = 1;
-            
+
             % Aplicacion de carga
             for i = 1:n
-                
+
                 % Iteracion con variacion del jacobiano
-                if ~usar1JAC
-                    
+                if ~use1JAC
+
                     % Calcula el primer deltae0, considera deformacion total
                     % como la suma de los deltae0 de cada iteracion
                     jac = section.calcJac(defTotal(i), phix(i), phiy(i));
+                    if isnan(jac)
+                        break
+                    end
                     jac = jac(1, 1); % Solo rescata aP/ae0
                     jac = jac^-1;
                     jacIter(i, 1) = jac(1, 1);
                     deltaE0Iter(i, 1) = jacIter(i, 1) * deltaP(i);
-                    
+
+                    valid = true;
                     for j = 1:(obj.maxiter - 1)
-                        
+
                         % Incrementa iteracion
                         iters(i) = iters(i) + 1;
-                        
+
                         % Actualiza deformacion total
                         if i > 1
                             defTotal(i) = defTotal(i-1) + sum(deltaE0Iter(i, :));
                         else
                             defTotal(i) = sum(deltaE0Iter(i, :));
                         end
-                        
+
                         % Calcula la fuerza interna
-                        pE0(i, j) = section.calcP(defTotal(i), phix(i), phiy(i));
-                        
+                        p = section.calcP(defTotal(i), phix(i), phiy(i));
+                        if isnan(p)
+                            valid = false;
+                            break;
+                        end
+                        pE0(i, j) = p;
+
                         % Calcula el error entre carga aproximada y exacta
                         err(i, j) = P(i) - pE0(i, j);
                         if abs(err(i, j)) < obj.tol && (i > 1 && pE0(i, j) ~= 0) || (i == 1 && pE0(i, j) == 0)
                             break;
                         end
-                        
+
                         % Si es mayor a la tolerancia
                         jac = section.calcJac(sum(deltaE0Iter(i, :)), phix(i), phiy(i));
+                        if isnan(jac)
+                            valid = false;
+                            break
+                        end
+
                         jac = jac(1, 1); % Solo rescata aP/ae0
                         jac = jac^-1;
                         jacIter(i, j+1) = jac(1, 1);
                         deltaE0Iter(i, j+1) = jacIter(i, j+1) * err(i, j);
-                        
+
                         % Si se pasa del error detiene y usa la pendiente del primer
                         % intervalo
                         if j > 1 && (abs(deltaE0Iter(i, j+1)) > abs(deltaE0Iter(i, j))) || (pE0(i, j) == 0 && i > 1)
                             for jj = 1:j + 1
                                 deltaE0Iter(i, jj) = 0;
                             end
-                            usar1JAC = true;
+                            use1JAC = true;
                             jacIter(i, 1) = jacIter(1, 1);
-                            usar1JACNITER = i;
+                            use1JACNITER = i;
                             break;
                         end
-                        
+
                     end
-                    
+                    if ~valid
+                        break;
+                    end
+
                 else % Itera con la primera pendiente
-                    
+
                     % Asigna el primer jacobiano
                     if i > 1
                         jacIter(i, 1) = jacIter(i-1, lastjac);
                     else
                         jacIter(i, 1) = jacIter(1, 1);
                     end
-                    
+                    if isnan(jacIter(i, 1))
+                        break;
+                    end
+
+                    valid = true;
                     for j = 1:(obj.maxiter - 1)
-                        
+
                         % Incrementa iteracion
                         iters(i) = iters(i) + 1;
-                        
+
                         % Actualiza deformacion total
                         if i > 1
                             defTotal(i) = defTotal(i-1) + sum(deltaE0Iter(i, :));
                         else
                             defTotal(i) = sum(deltaE0Iter(i, :));
                         end
-                        
+
                         % Calcula la fuerza interna
-                        pE0(i, j) = section.calcP(defTotal(i), phix(i), phiy(i));
-                        
+                        p = section.calcP(defTotal(i), phix(i), phiy(i));
+                        if isnan(p)
+                            valid = false;
+                            break;
+                        end
+                        pE0(i, j) = p;
+
                         % Calcula el error entre carga aproximada y exacta
                         err(i, j) = P(i) - pE0(i, j);
                         if abs(err(i, j)) < obj.tol
                             break;
                         end
-                        
+
                         % Si es mayor a la tolerancia
                         jacIter(i, j+1) = jacIter(i, j); % Puede ser jacIter(i, 1)
                         deltaE0Iter(i, j+1) = jacIter(i, j+1) * err(i, j);
-                        
+
                         % Si se pasa del error detiene y usa el j anterior
                         if j > 1 && (abs(deltaE0Iter(i, j+1)) > abs(deltaE0Iter(i, j)))
                             jacIter(i, j) = 0.5 * jacIter(i, j-1);
                             j = j - 1; %#ok<FXSET>
                         end
                         lastjac = j;
-                        
+
                     end
-                    
+
                 end
-                
+                if ~valid
+                    break;
+                end
+
                 % Actualiza deformacion total
                 if i > 1
                     defTotal(i) = defTotal(i-1) + sum(deltaE0Iter(i, :));
                 else
                     defTotal(i) = sum(deltaE0Iter(i, :));
                 end
-                
+
                 % Guarda el P calculado
-                pInt(i) = pE0(i, j);
-                
+                p = pE0(i, j);
+                if isnan(p)
+                    break;
+                end
+                pInt(i) = p;
+
                 % Calcula el momento
                 mxInt(i) = section.calcMx(defTotal(i), phix(i), phiy(i), P(i), r.ppos);
                 myInt(i) = section.calcMy(defTotal(i), phix(i), phiy(i), P(i), r.ppos);
-                
+
                 % Escribe el porcentaje
                 if obj.showprogress
                     msg = sprintf('\tCalculando... (%.1f/100)', i/n*100);
                     fprintf([reversePorcent, msg]);
                     reversePorcent = repmat(sprintf('\b'), 1, length(msg));
                 end
-                
+
             end
-            
+
+            % Verifica si las iteraciones fueron completadas
+            if i ~= n
+                i = i - 1;
+                fprintf('\nProceso terminado por problemas de material. Ultimo paso valido: %d', i);
+            end
+
             % Guarda la solucion
             obj.lastsole0p = {mxInt, myInt, phix, phiy, pInt, P, pE0, ...
                 section, iters, r.calcE0Mmode, r.calcE0Mangle, r.calcE0Mphi, ...
-                defTotal};
-            
+                defTotal, i};
+
             % Imprime resultados
             fprintf('\n');
             fprintf('\tIteraciones totales: %d\n', sum(iters));
-            fprintf('\tUsado primera matriz rigidez desde i: %d\n', usar1JACNITER);
+            fprintf('\tUsado primera matriz rigidez desde i: %d\n', use1JACNITER);
             fprintf('\tProceso finalizado en %.2f segundos\n', cputime-tIni);
             dispMCURV();
-            
+
         end % calc_e0M function
-        
+
         function [defTotal, mxInt, myInt, pInt, err, iters, jacIter] = calc_e0M_angle(obj, section, p, phi, angle, varargin)
             % calc_e0M_Angle: Calcula e0 y M dado un arreglo de cargas, una
             % curvatura y un angulo de analisis de la curvatura
@@ -307,31 +346,31 @@ classdef SectionAnalysis < BaseModel
             %
             % Parametros opcionales:
             %   ppos            Posicion de la carga, si no se define se deja en el centroide de la seccion
-            
+
             if nargin < 5
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'calc_e0M_angle(section,p,phi,angle,varargin)');
             end
-            
+
             if abs(angle) > 360
                 error('El angulo debe ser entre 0 y 360 grados');
             end
             if angle == 360
                 angle = 0;
             end
-            
+
             phix = phi .* cos(-angle/180*pi());
             phiy = phi .* sin(-angle/180*pi());
             [defTotal, mxInt, myInt, pInt, err, iters, jacIter] = ...
                 obj.calc_e0M(section, p, phix, phiy, varargin{:}, ...
                 'calcE0Mmode', 'angle', 'calcE0Mangle', angle, ...
                 'calcE0Mphi', phi);
-            
+
         end % calc_e0M_ngle function
-        
+
         function plot_lastIter(obj)
             % plot_lastIter: Grafica el resultado de la ultima iteracion
-            
+
             if isempty(obj.lastsole0p)
                 error('Analisis e0M no ha sido ejecutado');
             end
@@ -341,17 +380,17 @@ classdef SectionAnalysis < BaseModel
             hold on;
             secName = obj.lastsole0p{8}.getName();
             niter = obj.lastsole0p{9};
-            
+
             plot(1:length(niter), niter, '-', 'Linewidth', 1.5);
             grid on;
             grid minor;
-            
+
             xlabel('Numero de paso');
             ylabel('Numero de iteraciones');
             title({'Variacion numero iteraciones', secName});
-            
+
         end % plot_lastIter function
-        
+
         function plot_e0M(obj, varargin)
             % plot_e0M: Grafica el ultimo analisis de e0M
             %
@@ -380,7 +419,7 @@ classdef SectionAnalysis < BaseModel
             %   vecphiInterp    Interpolacion, max,min,med,sqrt
             %   vecphiLw        Ancho de linea
             %   vecphiSize      Porte puntos
-            
+
             tInit = cputime;
             p = inputParser;
             p.KeepUnmatched = true;
@@ -410,15 +449,15 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('vecphiSize', 15);
             parse(p, varargin{:});
             r = p.Results;
-            
+
             if isempty(obj.lastsole0p)
                 error('Analisis e0M no ha sido ejecutado');
             end
-            
+
             if length(r.vecphi) ~= length(r.vecphiColor)
                 error('vecphi debe tener igual largo que sus colores vecphiColor');
             end
-            
+
             fprintf('Graficando e0-M:\n');
             mxInt = abs(obj.lastsole0p{1}.*r.factorM);
             myInt = abs(obj.lastsole0p{2}.*r.factorM);
@@ -434,17 +473,17 @@ classdef SectionAnalysis < BaseModel
             phi = obj.lastsole0p{12};
             defTotal = obj.lastsole0p{13};
             fprintf('\tSeccion: %s\n', secName);
-            
+
             % Aplica medfilt
             if r.medfilt
                 mxInt = medfilt1(mxInt, r.medfiltN);
                 myInt = medfilt1(myInt, r.medfiltN);
                 pInt = medfilt1(pInt, r.medfiltN);
             end
-            
+
             % Indica si se grafico
             doPlot = false;
-            
+
             % Si se calculo con un angulo
             if strcmp(mode, 'angle')
                 if strcmp(r.plot, 'all') || strcmp(r.plot, 'mphi')
@@ -485,18 +524,18 @@ classdef SectionAnalysis < BaseModel
                     doPlot = true;
                 end
             end
-            
+
             if ~doPlot
                 error('Tipo grafico incorrecto, valores plot: all,mphi,pphi,ephi,mphix,phiy,pphix,pphiy,ephix,ephiy');
             end
-            
+
             % Finaliza el grafico
             drawnow();
             fprintf('\tProceso finalizado en %.2f segundos\n', cputime-tInit);
             dispMCURV();
-            
+
         end % plot_e0M function
-        
+
         function plt = plotStress(obj, i, varargin)
             % plotStress: Grafica los esfuerzos de la seccion ante un punto
             % especifico i
@@ -520,23 +559,28 @@ classdef SectionAnalysis < BaseModel
             %   unitloadF       Unidad de tension
             %   unitloadM       Unidad de momento
             %   unitloadP       Unidad de carga axial
-            
+
             if isempty(obj.lastsole0p)
                 error('Analisis e0M no ha sido ejecutado');
             end
-            
+
             if nargin < 1
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'plotStress(i,varargin)');
             end
-            
+
             phix = obj.lastsole0p{3};
             phiy = obj.lastsole0p{4};
             e0 = obj.lastsole0p{13};
             section = obj.lastsole0p{8};
             mode = obj.lastsole0p{10};
             angle = obj.lastsole0p{11};
-            
+            maxi = obj.lastsole0p{14};
+            if i > maxi
+                warning('Punto de evaluacion excede el maximo %d', maxi);
+                i = maxi;
+            end
+
             if strcmp(mode, 'angle')
                 plt = section.plotStress(e0, phix, phiy, varargin{:}, 'i', i, ...
                     'angle', angle, 'mode', 'a');
@@ -544,9 +588,9 @@ classdef SectionAnalysis < BaseModel
                 plt = section.plotStress(e0, phix, phiy, varargin{:}, 'i', i, ...
                     'mode', 'xy');
             end
-            
+
         end % plotStress function
-        
+
         function plt = plotStrain(obj, i, varargin)
             % plotStrain: Grafica la deformacion de la seccion ante un punto
             % especifico i
@@ -570,23 +614,23 @@ classdef SectionAnalysis < BaseModel
             %   unitloadF       Unidad de tension
             %   unitloadM       Unidad de momento
             %   unitloadP       Unidad de carga axial
-            
+
             if isempty(obj.lastsole0p)
                 error('Analisis e0M no ha sido ejecutado');
             end
-            
+
             if nargin < 1
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'plotStress(i,varargin)');
             end
-            
+
             phix = obj.lastsole0p{3};
             phiy = obj.lastsole0p{4};
             e0 = obj.lastsole0p{13};
             section = obj.lastsole0p{8};
             mode = obj.lastsole0p{10};
             angle = obj.lastsole0p{11};
-            
+
             if strcmp(mode, 'angle')
                 plt = section.plotStrain(e0, phix, phiy, varargin{:}, 'i', i, ...
                     'angle', angle, 'mode', 'a');
@@ -594,35 +638,35 @@ classdef SectionAnalysis < BaseModel
                 plt = section.plotStrain(e0, phix, phiy, varargin{:}, 'i', i, ...
                     'mode', 'xy');
             end
-            
+
         end % plotStrain function
-        
+
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
-            
+
             fprintf('Analisis de seccion:\n');
             disp@BaseModel(obj);
-            
+
         end % disp function
-        
+
     end % public methods
-    
-    methods(Access = private)
-        
+
+    methods (Access = private)
+
         function plot_e0M_mcurv(obj, phi, mxInt, myInt, r, curvAxis, secName, angle) %#ok<INUSL>
             % plot_e0M_mcurv: Grafica momento curvatura
-            
+
             if min(phi) == max(phi)
                 warning('Vector de curvatura phi no posee variacion');
                 return;
             end
-            
+
             plt = figure();
             movegui(plt, 'center');
             set(gcf, 'name', 'Momento curvatura');
             hold on;
             leg = {};
-            
+
             % Grafica las curvas
             if strcmp(r.m, 'all')
                 plot(phi, mxInt, '-', 'LineWidth', r.linewidth);
@@ -649,7 +693,7 @@ classdef SectionAnalysis < BaseModel
             else
                 error('Valor incorrecto parametro m: all,x,y,T');
             end
-            
+
             % Carga sap
             if ~strcmp(r.sapfile, '')
                 sapF = load(r.sapfile);
@@ -673,7 +717,7 @@ classdef SectionAnalysis < BaseModel
                     leg{length(leg)+1} = r.saplegend;
                 end
             end
-            
+
             % Ajusta el grafico
             grid on;
             grid minor;
@@ -690,16 +734,16 @@ classdef SectionAnalysis < BaseModel
                 ylim([0, max(get(gca, 'ylim'))]);
             end
             xlim([min(phi), max(phi)]);
-            
+
             % Obtiene los limites
             ylm = get(gca, 'ylim');
             mmin = min(ylm);
-            
+
             % Calcula las interpolaciones
             kphi = 1; % Numero de puntos agregados
             if (strcmp(r.m, 'x') || strcmp(r.m, 'y') || strcmp(r.m, 'T'))
                 for i = 1:length(r.vecphi)
-                    
+
                     % Recorre cada curvatura para buscar el objetivo y
                     % graficarlo, si no lo encuentra escribe en la consola
                     mi = 0;
@@ -722,7 +766,7 @@ classdef SectionAnalysis < BaseModel
                             end
                         end
                     end
-                    
+
                     % Grafica el punto
                     if mi ~= 0
                         fprintf('\tphi %e: Momento %f %s\n', phiobj, mi, r.unitloadM);
@@ -738,14 +782,14 @@ classdef SectionAnalysis < BaseModel
                         set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
                         kphi = kphi + 1;
                     end
-                    
+
                 end
             end
-            
+
             % Genera la diferencia
             if ~strcmp(r.sapfile, '') && r.sapdiff && ...
                     (strcmp(r.m, 'x') || strcmp(r.m, 'y') || strcmp(r.m, 'T'))
-                
+
                 % Diferencia absoluta
                 plt = figure();
                 movegui(plt, 'center');
@@ -758,13 +802,13 @@ classdef SectionAnalysis < BaseModel
                 elseif strcmp(r.m, 'T')
                     mInt = sqrt(mxInt.^2+myInt.^2);
                 end
-                
+
                 mDiff = zeros(1, length(phi));
                 for i = 1:length(phi)
                     mDiff(i) = sapMint(i) - mInt(i);
                 end
                 plot(phi, mDiff, 'k-', 'LineWidth', r.linewidth);
-                
+
                 grid on;
                 grid minor;
                 if ~strcmp(curvAxis, 'a')
@@ -775,7 +819,7 @@ classdef SectionAnalysis < BaseModel
                 ylabel(sprintf('Diferencia momento %s (%s)', mAxis, r.unitloadM));
                 title({'Diferencia momento absoluta', secName});
                 xlim([min(phi), max(phi)]);
-                
+
                 % Diferencia relativa
                 plt = figure();
                 movegui(plt, 'center');
@@ -794,14 +838,14 @@ classdef SectionAnalysis < BaseModel
                 ylabel('Diferencia momento (%)');
                 title({'Diferencia momento relativa', secName});
                 xlim([min(phi), max(phi)]);
-                
+
             end
-            
+
         end % plot_e0M_mcurv function
-        
+
         function plot_e0M_pcurv(obj, phi, pInt, r, curvAxis, secName, angle) %#ok<INUSL>
             % plot_e0M_pcurv: Grafica carga curvatura
-            
+
             if min(phi) == max(phi)
                 warning('Vector de curvatura phi no posee variacion');
                 return;
@@ -813,7 +857,7 @@ classdef SectionAnalysis < BaseModel
             grid on;
             grid minor;
             ylabel(sprintf('Carga axial interna P_{int} (%s)', r.unitloadP));
-            
+
             if ~strcmp(curvAxis, 'a')
                 title({sprintf('Carga axial interna vs curvatura \\phi_%s', curvAxis), secName});
                 xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
@@ -825,12 +869,12 @@ classdef SectionAnalysis < BaseModel
                 ylim([0, max(get(gca, 'ylim'))]);
             end
             xlim([min(phi), max(phi)]);
-            
+
         end % plot_e0M_pcurv function
-        
+
         function plot_e0M_ecurv(obj, phi, pInt, r, curvAxis, secName, angle) %#ok<INUSL>
             % plot_e0M_ecurv: Grafica deformacion
-            
+
             if min(phi) == max(phi)
                 warning('Vector de curvatura phi no posee variacion');
                 return;
@@ -842,7 +886,7 @@ classdef SectionAnalysis < BaseModel
             grid on;
             grid minor;
             ylabel('Deformacion e_0 (-)');
-            
+
             if ~strcmp(curvAxis, 'a')
                 title({sprintf('Deformacion vs curvatura \\phi_%s', curvAxis), secName});
                 xlabel(sprintf('Curvatura \\phi_%s (%s)', curvAxis, r.unitlength));
@@ -854,9 +898,9 @@ classdef SectionAnalysis < BaseModel
                 ylim([0, max(get(gca, 'ylim'))]);
             end
             xlim([min(phi), max(phi)]);
-            
+
         end % plot_e0M_ecurv function
-        
+
     end % private methods
-    
+
 end % SectionAnalysis class

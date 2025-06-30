@@ -18,7 +18,6 @@ addpath('mcurv/material');
 addpath('mcurv/material/concrete');
 addpath('mcurv/material/steel');
 addpath('mcurv/section');
-addpath('mcurv/utils');
 
 % Agrega los test al path
 addpath('test');

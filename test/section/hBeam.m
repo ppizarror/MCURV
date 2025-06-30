@@ -6,7 +6,6 @@ steel = ElastoplasticSteel('Acero A36', 294.31, 200894.198, 1120.531847, 0.24619
 steel.setColor([0, 0, 0.5]);
 steelw = ElastoplasticSteel('Acero A36', 294.31, 200894.198, 1120.531847, 0.246197);
 steelw.setColor([0.5, 0, 0]);
-% steel.plot();
 
 % Agrega los elementos a la seccion
 d = 300;
