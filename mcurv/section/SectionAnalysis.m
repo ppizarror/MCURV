@@ -148,141 +148,73 @@ classdef SectionAnalysis < BaseModel
             mxInt = nan(n, 1); % Momento por cada (P,phi)
             myInt = nan(n, 1); % Momento por cada (P,phi)
             reversePorcent = ''; % Texto que tiene el porcentaje de avance
-
-            % Variable que indica que las iteraciones se hacen con la primera
-            % pendiente de la matriz de rigidez
-            use1JAC = false;
-
-            % Almacena desde que i-incremento se usa el primer jacobiano
-            use1JACNITER = 1;
-            lastjac = 1;
+            useFixedJacobian = 0;
 
             % Aplicacion de carga
             for i = 1:n
+                valid = true;
 
-                % Iteracion con variacion del jacobiano
-                if ~use1JAC
-
-                    % Calcula el primer deltae0, considera deformacion total
-                    % como la suma de los deltae0 de cada iteracion
-                    jac = section.calcJac(defTotal(i), phix(i), phiy(i));
+                % Inicializa el Jacobiano para este paso
+                if i == 1 || useFixedJacobian == 0
+                    jac = obj.get_jacobian(section, defTotal(max(i-1, 1)), phix(i), phiy(i), false, NaN);
                     if isnan(jac)
-                        break
-                    end
-                    jac = jac(1, 1); % Solo rescata aP/ae0
-                    jac = jac^-1;
-                    jacIter(i, 1) = jac(1, 1);
-                    deltaE0Iter(i, 1) = jacIter(i, 1) * deltaP(i);
-
-                    valid = true;
-                    for j = 1:(obj.maxiter - 1)
-
-                        % Incrementa iteracion
-                        iters(i) = iters(i) + 1;
-
-                        % Actualiza deformacion total
-                        if i > 1
-                            defTotal(i) = defTotal(i-1) + sum(deltaE0Iter(i, :));
-                        else
-                            defTotal(i) = sum(deltaE0Iter(i, :));
-                        end
-
-                        % Calcula la fuerza interna
-                        p = section.calcP(defTotal(i), phix(i), phiy(i));
-                        if isnan(p)
-                            valid = false;
-                            break;
-                        end
-                        pE0(i, j) = p;
-
-                        % Calcula el error entre carga aproximada y exacta
-                        err(i, j) = P(i) - pE0(i, j);
-                        if abs(err(i, j)) < obj.tol && (i > 1 && pE0(i, j) ~= 0) || (i == 1 && pE0(i, j) == 0)
-                            break;
-                        end
-
-                        % Si es mayor a la tolerancia
-                        jac = section.calcJac(sum(deltaE0Iter(i, :)), phix(i), phiy(i));
-                        if isnan(jac)
-                            valid = false;
-                            break
-                        end
-
-                        jac = jac(1, 1); % Solo rescata aP/ae0
-                        jac = jac^-1;
-                        jacIter(i, j+1) = jac(1, 1);
-                        deltaE0Iter(i, j+1) = jacIter(i, j+1) * err(i, j);
-
-                        % Si se pasa del error detiene y usa la pendiente del primer
-                        % intervalo
-                        if j > 1 && (abs(deltaE0Iter(i, j+1)) > abs(deltaE0Iter(i, j))) || (pE0(i, j) == 0 && i > 1)
-                            for jj = 1:j + 1
-                                deltaE0Iter(i, jj) = 0;
-                            end
-                            use1JAC = true;
-                            jacIter(i, 1) = jacIter(1, 1);
-                            use1JACNITER = i;
-                            break;
-                        end
-
-                    end
-                    if ~valid
                         break;
                     end
+                else
+                    jac = jacIter(1, 1);
+                end
+                jacIter(i, 1) = jac;
+                deltaE0Iter(i, 1) = jac * deltaP(i);
 
-                else % Itera con la primera pendiente
+                % Iteración de Newton-Raphson
+                for j = 1:(obj.maxiter - 1)
+                    iters(i) = iters(i) + 1;
 
-                    % Asigna el primer jacobiano
+                    % Actualiza la deformacion total
                     if i > 1
-                        jacIter(i, 1) = jacIter(i-1, lastjac);
+                        defTotal(i) = defTotal(i-1) + sum(deltaE0Iter(i, :));
                     else
-                        jacIter(i, 1) = jacIter(1, 1);
+                        defTotal(i) = sum(deltaE0Iter(i, :));
                     end
-                    if isnan(jacIter(i, 1))
+
+                    % Calcula la fuerza interna
+                    p = section.calcP(defTotal(i), phix(i), phiy(i));
+                    if isnan(p)
+                        valid = false;
+                        break;
+                    end
+                    pE0(i, j) = p;
+
+                    % Calcula el error entre carga aproximada y exacta
+                    err(i, j) = P(i) - p;
+                    if abs(err(i, j)) < obj.tol && (i > 1 && p ~= 0 || i == 1 && p == 0)
                         break;
                     end
 
-                    valid = true;
-                    for j = 1:(obj.maxiter - 1)
+                    % Nuevo Jacobiano
+                    jacNew = obj.get_jacobian(section, defTotal(i), phix(i), phiy(i), useFixedJacobian > 0, jacIter(i, j));
+                    if isnan(jacNew)
+                        valid = false;
+                        break;
+                    end
 
-                        % Incrementa iteracion
-                        iters(i) = iters(i) + 1;
+                    jacIter(i, j+1) = jacNew;
+                    deltaE0Iter(i, j+1) = jacNew * err(i, j);
 
-                        % Actualiza deformacion total
-                        if i > 1
-                            defTotal(i) = defTotal(i-1) + sum(deltaE0Iter(i, :));
+                    % Chequeo de estabilidad
+                    if j > 1 && (abs(deltaE0Iter(i, j+1)) > abs(deltaE0Iter(i, j)) || (p == 0 && i > 1 && useFixedJacobian == 0))
+                        % Fuerza uso de primer Jacobiano a partir del próximo paso
+                        if useFixedJacobian == 0
+                            deltaE0Iter(i, :) = 0;
+                            useFixedJacobian = i;
+                            break;
                         else
-                            defTotal(i) = sum(deltaE0Iter(i, :));
-                        end
-
-                        % Calcula la fuerza interna
-                        p = section.calcP(defTotal(i), phix(i), phiy(i));
-                        if isnan(p)
-                            valid = false;
-                            break;
-                        end
-                        pE0(i, j) = p;
-
-                        % Calcula el error entre carga aproximada y exacta
-                        err(i, j) = P(i) - pE0(i, j);
-                        if abs(err(i, j)) < obj.tol
-                            break;
-                        end
-
-                        % Si es mayor a la tolerancia
-                        jacIter(i, j+1) = jacIter(i, j); % Puede ser jacIter(i, 1)
-                        deltaE0Iter(i, j+1) = jacIter(i, j+1) * err(i, j);
-
-                        % Si se pasa del error detiene y usa el j anterior
-                        if j > 1 && (abs(deltaE0Iter(i, j+1)) > abs(deltaE0Iter(i, j)))
-                            jacIter(i, j) = 0.5 * jacIter(i, j-1);
+                            jacIter(i, j) = jacIter(i, j) * 0.5;
                             j = j - 1; %#ok<FXSET>
                         end
-                        lastjac = j;
-
                     end
+                end % Iteraciones Newton-Raphson
 
-                end
                 if ~valid
                     break;
                 end
@@ -294,14 +226,8 @@ classdef SectionAnalysis < BaseModel
                     defTotal(i) = sum(deltaE0Iter(i, :));
                 end
 
-                % Guarda el P calculado
-                p = pE0(i, j);
-                if isnan(p)
-                    break;
-                end
-                pInt(i) = p;
-
-                % Calcula el momento
+                % Guarda P y momentos
+                pInt(i) = pE0(i, j);
                 mxInt(i) = section.calcMx(defTotal(i), phix(i), phiy(i), P(i), r.ppos);
                 myInt(i) = section.calcMy(defTotal(i), phix(i), phiy(i), P(i), r.ppos);
 
@@ -328,7 +254,9 @@ classdef SectionAnalysis < BaseModel
             % Imprime resultados
             fprintf('\n');
             fprintf('\tIteraciones totales: %d\n', sum(iters));
-            fprintf('\tUsado primera matriz rigidez desde i: %d\n', use1JACNITER);
+            if useFixedJacobian > 0
+                fprintf('\tUsando primera matriz rigidez desde i: %d\n', useFixedJacobian);
+            end
             fprintf('\tProceso finalizado en %.2f segundos\n', cputime-tIni);
             dispMCURV();
 
@@ -652,6 +580,20 @@ classdef SectionAnalysis < BaseModel
     end % public methods
 
     methods (Access = private)
+
+        function jac = get_jacobian(~, section, e0, phix, phiy, useFixed, jac0)
+            % get_jacobian: Obtiene el jacobiano de una seccion
+            if useFixed
+                jac = jac0; % Usar primera pendiente
+            else
+                jac = section.calcJac(e0, phix, phiy);
+                if isnan(jac)
+                    jac = NaN;
+                else
+                    jac = 1 / jac(1, 1);
+                end
+            end
+        end % get_jacobian function
 
         function plot_e0M_mcurv(obj, phi, mxInt, myInt, r, curvAxis, secName, angle) %#ok<INUSL>
             % plot_e0M_mcurv: Grafica momento curvatura
