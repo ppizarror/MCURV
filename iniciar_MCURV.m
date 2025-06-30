@@ -22,5 +22,6 @@ addpath('mcurv/utils');
 
 % Agrega los test al path
 addpath('test');
+addpath('test/local');
 addpath('test/material');
 addpath('test/section');

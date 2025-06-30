@@ -1,13 +1,9 @@
 # Archivos residuales
 *.asv
 
-# Ignora archivos idea
-*.idea
-
 # Otros
 *.pdf
 .vscode/
-dev/
 
 # SAP2000
 *.sdb
@@ -21,7 +17,5 @@ dev/
 *.OUT
 
 # Salidas
-test/*out*
-test/**/*.gif
-test/**/sap2000/*
+test/local
 test/section/mat/**
