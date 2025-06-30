@@ -23,8 +23,8 @@
 %|______________________________________________________________________|
 
 classdef HognestadModifiedConcrete < GenericMaterial
-    
-    properties(Access = protected)
+
+    properties (Access = protected)
         fc % Tension de rotura
         Ec % Modulo elastico en compresion
         fr % Tension maxima de rotura en traccion
@@ -32,9 +32,9 @@ classdef HognestadModifiedConcrete < GenericMaterial
         eo % Deformacion a resistencia maxima
         eu % Deformacion ultima
     end % protected properties
-    
-    methods(Access = public)
-        
+
+    methods (Access = public)
+
         function obj = HognestadModifiedConcrete(matName, fc, eo, eu)
             % HognestadModifiedConcrete: Constructor de la clase
             %
@@ -42,7 +42,7 @@ classdef HognestadModifiedConcrete < GenericMaterial
             %   fc      Resistencia a compresion (f'c)
             %   eo      Deformacion a resistencia maxima
             %   eu      Deformacion ultima
-            
+
             if nargin ~= 4
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'HognestadModifiedConcrete(matName,fc,eo,eu)');
@@ -54,23 +54,23 @@ classdef HognestadModifiedConcrete < GenericMaterial
             obj.Ec = 4700 * sqrt(fc);
             obj.er = -obj.fr / obj.Ec;
             obj.eu = eu;
-            
+
         end % HognestadModifiedConcrete constructor
-        
+
         function [f, E] = eval(obj, e)
             % eval: Retorna la tension y el modulo elastico tangente del
             % material a un cierto nivel de deformacion
-            
+
             % Crea los vectores solucion
             n = length(e); % Largo del vector
             f = zeros(n, 1);
             E = zeros(n, 1);
-            
+
             % Deterimina rango
             for i = 1:n
                 if e(i) < obj.er % Sobrepasa a rotura
-                    f(i) = 0;
-                    E(i) = 0;
+                    f(i) = NaN;
+                    E(i) = NaN;
                 elseif (obj.er <= e(i)) && (e(i) < 0) % Tension
                     f(i) = obj.Ec * e(i);
                     E(i) = obj.Ec;
@@ -81,16 +81,16 @@ classdef HognestadModifiedConcrete < GenericMaterial
                     f(i) = obj.fc * (1 - 0.15 * (e(i) - obj.eo) / (obj.eu - obj.eo));
                     E(i) = -0.15 * obj.fc / (obj.eu - obj.eo);
                 else % Sobrepaso compresion
-                    f(i) = 0;
-                    E(i) = 0;
+                    f(i) = NaN;
+                    E(i) = NaN;
                 end
             end
-            
+
         end % eval function
-        
+
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
-            
+
             fprintf('Propiedades hormigon modelo Hognestad modificado:\n');
             disp@GenericMaterial(obj);
             fprintf('\tResistencia a compresion fc: %.2f\n', obj.fc);
@@ -102,9 +102,9 @@ classdef HognestadModifiedConcrete < GenericMaterial
             fprintf('\tTension a deformacion ultima: %.2f (%.2ffc)\n', ...
                 fu, fu/obj.fc);
             dispMCURV();
-            
+
         end % disp function
-        
+
     end % public methods
-    
+
 end % HognestadModifiedConcrete class

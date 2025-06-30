@@ -23,8 +23,8 @@
 %|______________________________________________________________________|
 
 classdef ManderSteel < GenericMaterial
-    
-    properties(Access = protected)
+
+    properties (Access = protected)
         fy % Tension de fluencia del acero
         ey % Deformacion al llegar a la fluencia
         Es % Modulo elastico
@@ -34,9 +34,9 @@ classdef ManderSteel < GenericMaterial
         esu % Deformacion en maximo limite
         ef % Deformacion final
     end % protected properties
-    
-    methods(Access = public)
-        
+
+    methods (Access = public)
+
         function obj = ManderSteel(matName, fy, Es, fsu, Esh, esh, esu, ef)
             % ManderSteel: Constructor de la clase
             %
@@ -48,7 +48,7 @@ classdef ManderSteel < GenericMaterial
             %   esh     Deformacion post fluencia
             %   esu     Deformacion en maximo limite
             %   ef      Deformacion final
-            
+
             if nargin ~= 8
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'ManderSteel(matName,fy,Es,fsu,Esh,esh,esu,ef)');
@@ -62,18 +62,18 @@ classdef ManderSteel < GenericMaterial
             obj.esh = esh;
             obj.esu = esu;
             obj.ef = ef;
-            
+
         end % ManderSteel constructor
-        
+
         function [f, E] = eval(obj, e)
             % eval: Retorna la tension y el modulo elastico tangente del
             % material a un cierto nivel de deformacion
-            
+
             % Crea los vectores solucion
             n = length(e); % Largo del vector
             f = zeros(n, 1);
             E = zeros(n, 1);
-            
+
             % Deterimina rango
             for i = 1:n
                 esi = abs(e(i));
@@ -92,20 +92,20 @@ classdef ManderSteel < GenericMaterial
                         f(i) = 0;
                         E(i) = 0;
                     else
-                        f(i) = f(i)* sgn;
+                        f(i) = f(i) * sgn;
                         E(i) = -sgn * (obj.fy - obj.fsu) * (abs(fr)^p) * p * absDerivative(fr) / ((obj.esu - obj.esh) * abs(fr));
                     end
                 else % Rotura
-                    f(i) = 0;
-                    E(i) = 0;
+                    f(i) = NaN;
+                    E(i) = NaN;
                 end
             end
-            
+
         end % eval function
-        
+
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
-            
+
             fprintf('Propiedades acero Mander et al. (1984):\n');
             disp@GenericMaterial(obj);
             fprintf('\tTension:\n\t\tfy: %.2f\n\t\tfsu: %.2f (%.2ffy)\n', ...
@@ -115,9 +115,9 @@ classdef ManderSteel < GenericMaterial
             fprintf('\tDeformaciones:\n\t\tey: %.4f\n\t\tesh: %.4f\n\t\tesu: %.4f\n\t\tef: %.4f\n', ...
                 obj.ey, obj.esh, obj.esu, obj.ef);
             dispMCURV();
-            
+
         end % disp function
-        
+
     end % public methods
-    
+
 end % ManderSteel class

@@ -23,17 +23,17 @@
 %|______________________________________________________________________|
 
 classdef ElastoplasticSteel < GenericMaterial
-    
-    properties(Access = protected)
+
+    properties (Access = protected)
         fy % Tension de fluencia del acero
         Es1 % Modulo elastico
         Es2 % Modulo elastico plastificado
         ey % Deformacion de fluencia del acero
         eu % Deformacion ultima del acero
     end % protected properties
-    
-    methods(Access = public)
-        
+
+    methods (Access = public)
+
         function obj = ElastoplasticSteel(matName, fy, Es1, Es2, eu)
             % ElastoplasticSteel: Constructor de la clase
             %
@@ -42,7 +42,7 @@ classdef ElastoplasticSteel < GenericMaterial
             %   Es1     Modulo de rigidez elastico
             %   Es2     Modulo de rigidez post fluencia
             %   eu      Deformacion ultima [-]
-            
+
             if nargin ~= 5
                 error('Numero de parametros incorrectos, uso: %s', ...
                     'ElastoplasticSteel(matName,fy,Es1,Es2,eu)');
@@ -53,13 +53,13 @@ classdef ElastoplasticSteel < GenericMaterial
             obj.Es1 = Es1;
             obj.Es2 = Es2;
             obj.eu = eu;
-            
+
         end % ElastoplasticSteel constructor
-        
+
         function [f, E] = eval(obj, e)
             % eval: Retorna la tension y el modulo elastico tangente del
             % material a un cierto nivel de deformacion
-            
+
             % Crea los vectores solucion
             n = length(e); % Largo del vector
             f = zeros(n, 1);
@@ -73,28 +73,28 @@ classdef ElastoplasticSteel < GenericMaterial
                     f(i) = obj.Es1 * esi * sgn;
                     E(i) = obj.Es1;
                 elseif (obj.ey <= esi) && (esi < obj.eu) % Rango post fluencia
-                    f(i) = (obj.fy + obj.Es2 * (esi-obj.ey)) * sgn;
+                    f(i) = (obj.fy + obj.Es2 * (esi - obj.ey)) * sgn;
                     E(i) = obj.Es2;
                 else % Rotura
-                    f(i) = 0;
-                    E(i) = 0;
+                    f(i) = NaN;
+                    E(i) = NaN;
                 end
             end
-            
+
         end % eval function
-        
+
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
-            
+
             fprintf('Propiedades acero elastoplastico:\n');
             disp@GenericMaterial(obj);
             fprintf('\tTension de fluencia: %.2f\n', obj.fy);
             fprintf('\tModulos elasticos:\n\t\tEs1: %.1f\n\t\tEs2: %.1f\n', ...
                 obj.Es1, obj.Es2);
             dispMCURV();
-            
+
         end % disp function
-        
+
     end % public methods
-    
+
 end % ElastoplasticSteel class

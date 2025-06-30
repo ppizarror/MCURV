@@ -26,30 +26,30 @@
 %|______________________________________________________________________|
 
 classdef GenericMaterial < BaseModel
-    
-    properties(Access = protected)
+
+    properties (Access = protected)
         materialColor % Color of the material
     end % protected properties
-    
-    methods(Access = public)
-        
+
+    methods (Access = public)
+
         function obj = GenericMaterial(matName)
             % GenericMaterial: Constructor de la clase
-            
+
             obj = obj@BaseModel(matName);
             obj.materialColor = [0, 0, 0];
-            
+
         end % GenericMaterial constructor
-        
+
         function [f, E] = eval(obj, e) %#ok<*INUSL>
             % eval: Retorna la tension y el modulo elastico tangente del
             % material a un cierto nivel de deformacion
-            
+
             f = 0 * e;
             E = 0;
-            
+
         end % eval function
-        
+
         function plt = plot(obj, varargin)
             % plot: Grafica el material
             %
@@ -66,7 +66,7 @@ classdef GenericMaterial < BaseModel
             %   npoints         Numero de puntos
             %   plotType        Tipo de plot 'stress','elastic'
             %   units           Unidad del grafico
-            
+
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('emax', 1);
@@ -84,10 +84,10 @@ classdef GenericMaterial < BaseModel
             parse(p, varargin{:});
             r = p.Results;
             r.plotType = lower(r.plotType);
-            
+
             % Crea la particion del espacio
             ex = linspace(r.emin, r.emax, r.npoints)';
-            
+
             % Calcula la tension/elasticidad
             if strcmp(r.plotType, 'stress')
                 [fx, ~] = obj.eval(ex);
@@ -103,12 +103,12 @@ classdef GenericMaterial < BaseModel
                 error('Tipo de grafico desconocido, valores posibles: %s', ...
                     'stress,elastic');
             end
-            
+
             % Crea la figura
             plt = figure();
             movegui(plt, 'center');
             set(gcf, 'name', plotTitle);
-            
+
             % Grafica
             plot(ex, fx, 'LineWidth', r.lineWidth, 'Color', r.lineColor);
             lims = get(gca, 'ylim') .* (1 + r.limMargin);
@@ -120,20 +120,20 @@ classdef GenericMaterial < BaseModel
             plot([0, 0], lims, r.gridStyle, ...
                 'Color', r.gridColor, 'LineWidth', r.gridLineWidth);
             plot(ex, fx, 'LineWidth', r.lineWidth, 'Color', r.lineColor);
-            
+
             grid on;
             grid minor;
-            
+
             title(plotTitle);
             xlabel('Deformacion (-)');
             ylabel(yLabel);
-            
+
             if ~strcmp(r.legend, 'off')
                 legend({plotLegend}, 'Location', r.legend);
             end
-            
+
         end % plot function
-        
+
         function t = getStressDeformation(obj, varargin)
             % getStressDeformation: Obtiene una tabla de esfuerzo
             % deformaciones del material
@@ -143,7 +143,7 @@ classdef GenericMaterial < BaseModel
             %   emin            Deformacion menor
             %   file            Archivo en que se guarda la informacion
             %   npoints         Numero de puntos
-            
+
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('emax', 1);
@@ -152,28 +152,28 @@ classdef GenericMaterial < BaseModel
             p.addOptional('npoints', 1000);
             parse(p, varargin{:});
             r = p.Results;
-            
+
             t = zeros(r.npoints, 2);
             j = 1; % Contador sobre t
             e = linspace(r.emin, r.emax, r.npoints);
             [f, ~] = obj.eval(e);
-            
+
             for i = 1:r.npoints
-                
+
                 % Si se pasa por cero
                 if i > 1 && f(i) > 0 && f(i-1) < 0 && f(i) ~= 0
                     t(j, 1) = 0;
                     t(j, 2) = 0;
                     j = j + 1;
                 end
-                
+
                 % Guarda el punto
                 t(j, 1) = e(i);
                 t(j, 2) = f(i);
                 j = j + 1;
-                
+
             end
-            
+
             % Si se pasa un archivo
             if ~strcmp(r.file, '')
                 fileO = fopen(r.file, 'w');
@@ -186,30 +186,30 @@ classdef GenericMaterial < BaseModel
                 end
                 fclose(fileO);
             end
-            
+
         end % getStressDeformation function
-        
+
         function disp(obj)
             % disp: Imprime la informacion del objeto en consola
-            
+
             disp@BaseModel(obj);
-            
+
         end % disp function
-        
+
         function setColor(obj, color)
             % setColor: Set material color
-            
+
             obj.materialColor = color;
-            
+
         end % setColor function
-        
+
         function c = getColor(obj)
             % getColor: Return material color
-            
+
             c = obj.materialColor;
-            
+
         end % getColor function
-        
+
     end % public methods
-    
+
 end % GenericMaterial class
