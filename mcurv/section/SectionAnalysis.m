@@ -94,6 +94,7 @@ classdef SectionAnalysis < BaseModel
             % Actualiza propiedades
             section.updateProps();
             [px, py] = section.getCentroid();
+            section.resetEvents();
 
             p = inputParser;
             p.KeepUnmatched = true;
@@ -238,6 +239,9 @@ classdef SectionAnalysis < BaseModel
                     reversePorcent = repmat(sprintf('\b'), 1, length(msg));
                 end
 
+                % Llama a eventos
+                section.callEvents(defTotal(i), phix(i), phiy(i), pInt(i), mxInt(i), myInt(i), iters(i));
+
             end
 
             % Verifica si las iteraciones fueron completadas
@@ -294,7 +298,7 @@ classdef SectionAnalysis < BaseModel
                 'calcE0Mmode', 'angle', 'calcE0Mangle', angle, ...
                 'calcE0Mphi', phi);
 
-        end % calc_e0M_ngle function
+        end % calc_e0M_angle function
 
         function plot_lastIter(obj)
             % plot_lastIter: Grafica el resultado de la ultima iteracion
@@ -373,6 +377,7 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('vecphi', []); % Vector phi para interpolar
             p.addOptional('vecphiColor', {}); % Cell phi colores
             p.addOptional('vecphiInterp', 'min');
+            p.addOptional('vecphiName', {}); % Cell phi nombres
             p.addOptional('vecphiLw', 0.5);
             p.addOptional('vecphiSize', 15);
             parse(p, varargin{:});
@@ -454,7 +459,11 @@ classdef SectionAnalysis < BaseModel
             end
 
             if ~doPlot
-                error('Tipo grafico incorrecto, valores plot: all,mphi,pphi,ephi,mphix,phiy,pphix,pphiy,ephix,ephiy');
+                if strcmp(mode, 'angle')
+                    error('Tipo grafico incorrecto, valores plot: all,mphi,pphi,ephi');
+                else
+                    error('Tipo grafico incorrecto, valores plot: all,mphix,phiy,pphix,pphiy,ephix,ephiy');
+                end
             end
 
             % Finaliza el grafico
@@ -711,10 +720,15 @@ classdef SectionAnalysis < BaseModel
 
                     % Grafica el punto
                     if mi ~= 0
+                        if length(r.vecphiName) == length(r.vecphi)
+                            phiname = strcat(r.vecphiName{i}, ': ');
+                        else
+                            phiname = '';
+                        end
                         fprintf('\tphi %e: Momento %f %s\n', phiobj, mi, r.unitloadM);
                         plot([phiobj, phiobj], [mmin, mi], '--', ...
                             'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw, ...
-                            'DisplayName', sprintf('\\phi_%d=%.2e, M_%d=%.1f', kphi, phiobj, kphi, mi));
+                            'DisplayName', sprintf('%s\\phi_%d=%.2e, M_%d=%.1f', phiname, kphi, phiobj, kphi, mi));
                         pl = plot([min(phi), phiobj], [mi, mi], '--', ...
                             'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw);
                         set(get(get(pl, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');

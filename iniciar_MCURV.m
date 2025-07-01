@@ -13,6 +13,8 @@ MCURV_ver = 'v1.3';
 % Agrega las carpetas de la plataforma MCURV al PATH
 addpath('mcurv');
 addpath('mcurv/base');
+addpath('mcurv/event');
+addpath('mcurv/event/threshold');
 addpath('mcurv/lib');
 addpath('mcurv/material');
 addpath('mcurv/material/concrete');

@@ -28,7 +28,7 @@
 classdef GenericMaterial < BaseModel
 
     properties (Access = protected)
-        materialColor % Color of the material
+        materialColor % Color del material
     end % protected properties
 
     methods (Access = public)

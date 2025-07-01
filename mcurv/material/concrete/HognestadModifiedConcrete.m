@@ -66,11 +66,11 @@ classdef HognestadModifiedConcrete < GenericMaterial
             f = zeros(n, 1);
             E = zeros(n, 1);
 
-            % Deterimina rango
+            % Determina rango
             for i = 1:n
-                if e(i) < obj.er % Sobrepasa a rotura
-                    f(i) = NaN;
-                    E(i) = NaN;
+                if e(i) < obj.er % Sobrepasa rotura
+                    f(i) = 0;
+                    E(i) = 0;
                 elseif (obj.er <= e(i)) && (e(i) < 0) % Tension
                     f(i) = obj.Ec * e(i);
                     E(i) = obj.Ec;

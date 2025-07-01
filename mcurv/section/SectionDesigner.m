@@ -25,10 +25,12 @@
 classdef SectionDesigner < BaseModel
 
     properties (Access = private)
+        contEvent % Eventos objetos continuos
         contGeom % Geometrias objetos continuos
         contMat % Materialidad objetos continuos
         contTotal % Numero total de objetos continuos
         contParams % Parametros adicionales objetos continuos
+        singEvent % Eventos objetos singulares
         singGeom % Geometrias objetos singulares
         singGeomPlot % Guarda definicion de graficos de los objetos singulares
         singMat % Materialidad objetos singulares
@@ -53,10 +55,12 @@ classdef SectionDesigner < BaseModel
             obj = obj@BaseModel(matName);
 
             % Genera las bases
+            obj.contEvent = {};
             obj.contGeom = {};
             obj.contMat = {};
             obj.contTotal = 0;
             obj.contParams = {};
+            obj.singEvent = {};
             obj.singParams = {};
             obj.singGeom = {};
             obj.singGeomPlot = {};
@@ -85,6 +89,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   rotation        Angulo de rotacion en grados
             %   translatex      Punto de translacion del eje x
@@ -116,6 +121,7 @@ classdef SectionDesigner < BaseModel
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('color', material.getColor());
+            p.addOptional('event', GenericEvent('contEvent'));
             p.addOptional('linewidth', 0.5);
             p.addOptional('rotation', 0);
             p.addOptional('translatex', 0);
@@ -166,7 +172,9 @@ classdef SectionDesigner < BaseModel
             xpatchR = xpatchR + txV;
             ypatchR = ypatchR + tyV;
 
+            % Guarda objetos
             obj.contTotal = obj.contTotal + 1;
+            obj.contEvent{obj.contTotal} = r.event;
             obj.contMat{obj.contTotal} = material;
             obj.contParams{obj.contTotal} = r;
 
@@ -264,6 +272,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   transparency    Transparencia de la seccion
 
@@ -294,6 +303,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   rotation        Angulo de rotacion en grados
             %   translatex      Punto de translacion del eje x
@@ -342,6 +352,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   rotation        Angulo de rotacion en grados
             %   translatex      Punto de translacion del eje x
@@ -403,6 +414,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   rotation        Angulo de rotacion en grados
             %   translatex      Punto de translacion del eje x
@@ -433,6 +445,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   rotation        Angulo de rotacion en grados
             %   translatex      Punto de translacion del eje x
@@ -463,6 +476,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   rotation        Angulo de rotacion en grados
             %   translatex      Punto de translacion del eje x
@@ -502,6 +516,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   rotation        Angulo de rotacion en grados
             %   translatex      Punto de translacion del eje x
@@ -543,6 +558,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   rotation        Angulo de rotacion en grados
             %   translatex      Punto de translacion del eje x
@@ -572,6 +588,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   linewidth       Ancho de linea de la seccion
             %   rotation        Angulo de rotacion en grados
             %   translatex      Punto de translacion del eje x
@@ -610,6 +627,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   nrad            Numero de discretizacion radial
             %   ntheta          Numero de discretizacion en angulo
             %   linewidth       Ancho de linea de la seccion
@@ -710,6 +728,7 @@ classdef SectionDesigner < BaseModel
             %
             % Parametros opcionales:
             %   color           Color del area
+            %   event           Evento de la seccion
             %   ntheta          Numero de discretizacion en angulo
             %   linewidth       Ancho de linea de la seccion
             %   translatex      Punto de translacion del eje x
@@ -749,6 +768,7 @@ classdef SectionDesigner < BaseModel
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('color', material.getColor());
+            p.addOptional('event', GenericEvent('contEvent'));
             p.addOptional('plotareafactor', 1);
             p.addOptional('transparency', 0);
             parse(p, varargin{:});
@@ -760,6 +780,7 @@ classdef SectionDesigner < BaseModel
             xpatch = [(xc - b / 2), (xc + b / 2), (xc + b / 2), (xc + -b / 2)];
             ypatch = [(yc - b / 2), (yc - b / 2), (yc + b / 2), (yc + b / 2)];
             zpatch = [0, 0, 0, 0];
+            obj.singEvent{obj.singTotal} = r.event;
             obj.singGeomPlot{obj.singTotal} = {xpatch, ypatch, zpatch};
             obj.singMat{obj.singTotal} = material;
             obj.singParams{obj.singTotal} = r;
@@ -1068,15 +1089,12 @@ classdef SectionDesigner < BaseModel
 
             % Agrega objetos continuos
             for j = 1:obj.contTotal
-
                 g = obj.contGeom{j};
                 px = g{1};
                 py = g{2};
                 mat = obj.contMat{j};
                 dd = g{3} * g{4};
-                nt = g{5};
-                for i = 1:nt % Calcula la integral
-
+                for i = 1:g{5} % Calcula la integral
                     e_i = eps(px(i), py(i));
                     [~, Ec] = mat.eval(e_i);
                     if isnan(Ec)
@@ -1095,7 +1113,6 @@ classdef SectionDesigner < BaseModel
                     aMx_aphix = aMx_aphix + Ec * ((py(i) - obj.y0)^2) * dd; % aMx/aphix
                     aMx_aphiy = aMx_aphiy - Ec * (py(i) - obj.y0) * (px(i) - obj.x0) * dd; % aMx/aphiy
                     aMy_aphiy = aMy_aphiy + Ec * ((px(i) - obj.x0)^2) * dd; % aMy/aphiy
-
                 end
             end
 
@@ -1138,6 +1155,63 @@ classdef SectionDesigner < BaseModel
                 [aMy_ae0, aMy_aphix, aMy_aphiy]];
 
         end % calcJac function
+
+        function callEvents(obj, e0, phix, phiy, p, mx, my, n)
+            % callEvents: LLama a los eventos de la seccion
+            %
+            % Parametros requeridos:
+            %   e0          Valor de la deformacion con respecto al centroide
+            %   phix        Curvatura en x
+            %   phiy        Curvatura en y
+            %   p           Nivel de carga axial analisis
+            %   mx          Momento total en eje x analisis
+            %   my          Momento total en eje y analisis
+            %   n           Numero de iteracion
+
+            % Crea funcion deformacion
+            eps = @(x, y) e0 + phix * (y - obj.y0) - phiy * (x - obj.x0);
+
+            % Objetos continuos
+            for j = 1:obj.contTotal
+                g = obj.contGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.contMat{j};
+                for i = 1:g{5}
+                    e_i = eps(px(i), py(i));
+                    [f, Ec] = mat.eval(e_i);
+                    obj.contEvent{j}.eval(e0, phix, phiy, e_i, f, Ec, p, mx, my, n);
+                end
+            end
+
+            % Objetos puntuales
+            for j = 1:obj.singTotal
+                g = obj.singGeom{j};
+                px = g{1};
+                py = g{2};
+                mat = obj.singMat{j};
+
+                e_i = eps(px, py);
+                [f, Ec] = mat.eval(e_i);
+                obj.singEvent{j}.eval(e0, phix, phiy, e_i, f, Ec, p, mx, my, n);
+            end
+
+        end % callEvents function
+        
+        function resetEvents(obj)
+            % resetEvents: Resetea eventos
+
+            for j = 1:obj.contTotal
+                g = obj.contGeom{j};
+                for i = 1:g{5}
+                    obj.contEvent{j}.reset();
+                end
+            end
+            for j = 1:obj.singTotal
+                obj.singEvent{j}.reset();
+            end
+
+        end % resetEvents function
 
         function mx = calcMx(obj, e0, phix, phiy, pext, ppos)
             % calcMx: Calcula el momento con respecto al eje x
