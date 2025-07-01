@@ -72,7 +72,12 @@ classdef DeformationLimit < GenericEvent
             elseif obj.maxEps < 0 && eps < obj.maxEps || obj.maxEps > 0 && eps > obj.maxEps
                 fprintf('\n');
                 dispMCURV();
-                fprintf('Evento Deformacion limite: %s (%f > %f)\n', obj.name, eps, obj.maxEps);
+                if obj.maxEps < 0
+                    expr = '<';
+                else
+                    expr = '>';
+                end
+                fprintf('Evento Deformacion limite: %s (%f %s %f)\n', obj.name, eps, expr, obj.maxEps);
                 obj.printAll(e0, phix, phiy, eps, f, E, p, mx, my, n);
                 obj.hit = true;
                 obj.hitData = [phix, phiy, mx, my];

@@ -54,8 +54,7 @@ classdef SectionAnalysis < BaseModel
         end % SectionAnalysis constructor
 
         function [defTotal, mxInt, myInt, pInt, err, iters, jacIter] = calc_e0M(obj, section, P, phix, phiy, varargin)
-            % calc_e0M: Calcula e0 y M dado un arreglo de cargas y
-            % curvaturas
+            % calc_e0M: Calcula e0 y M dado un arreglo de cargas y curvaturas
             %
             % Parametros:
             %   section         Objeto de la seccion de analisis
@@ -156,7 +155,7 @@ classdef SectionAnalysis < BaseModel
                 valid = true;
 
                 % Inicializa el Jacobiano para este paso
-                if i == 1 || useFixedJacobian == 0
+                if i == 1
                     jac = obj.get_jacobian(section, defTotal(max(i-1, 1)), phix(i), phiy(i), false, NaN);
                     if isnan(jac)
                         break;
@@ -205,12 +204,12 @@ classdef SectionAnalysis < BaseModel
                     % Chequeo de estabilidad
                     if j > 1 && (abs(deltaE0Iter(i, j+1)) > abs(deltaE0Iter(i, j)) || (p == 0 && i > 1 && useFixedJacobian == 0))
                         % Fuerza uso de primer Jacobiano a partir del próximo paso
-                        if useFixedJacobian == 0
+                        if j > 0.9 * obj.maxiter && useFixedJacobian == 0
                             deltaE0Iter(i, :) = 0;
                             useFixedJacobian = i;
-                            break;
+                            j = 0; %#ok<FXSET>
                         else
-                            jacIter(i, j) = jacIter(i, j) * 0.5;
+                            jacIter(i, j+1) = jacIter(i, j) * 0.5;
                             j = j - 1; %#ok<FXSET>
                         end
                     end
