@@ -121,7 +121,7 @@ classdef SectionDesigner < BaseModel
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('color', material.getColor());
-            p.addOptional('event', GenericEvent('contEvent'));
+            p.addOptional('event', {GenericEvent('contEvent')});
             p.addOptional('linewidth', 0.5);
             p.addOptional('rotation', 0);
             p.addOptional('translatex', 0);
@@ -174,6 +174,9 @@ classdef SectionDesigner < BaseModel
 
             % Guarda objetos
             obj.contTotal = obj.contTotal + 1;
+            if ~iscell(r.event)
+                error('Event debe ser una cell');
+            end
             obj.contEvent{obj.contTotal} = r.event;
             obj.contMat{obj.contTotal} = material;
             obj.contParams{obj.contTotal} = r;
@@ -768,7 +771,7 @@ classdef SectionDesigner < BaseModel
             p = inputParser;
             p.KeepUnmatched = true;
             p.addOptional('color', material.getColor());
-            p.addOptional('event', GenericEvent('contEvent'));
+            p.addOptional('event', {GenericEvent('contEvent')});
             p.addOptional('plotareafactor', 1);
             p.addOptional('transparency', 0);
             parse(p, varargin{:});
@@ -780,6 +783,9 @@ classdef SectionDesigner < BaseModel
             xpatch = [(xc - b / 2), (xc + b / 2), (xc + b / 2), (xc + -b / 2)];
             ypatch = [(yc - b / 2), (yc - b / 2), (yc + b / 2), (yc + b / 2)];
             zpatch = [0, 0, 0, 0];
+            if ~iscell(r.event)
+                error('Event debe ser una cell');
+            end
             obj.singEvent{obj.singTotal} = r.event;
             obj.singGeomPlot{obj.singTotal} = {xpatch, ypatch, zpatch};
             obj.singMat{obj.singTotal} = material;
@@ -819,6 +825,7 @@ classdef SectionDesigner < BaseModel
             %   legendCentroid      Leyenda centroide
             %   legendMaterial      Leyenda de materiales
             %   limMargin           Incrementa el margen
+            %   pbAspect            Aspecto. por defecto es [1, 1, 1]
             %   showdisc            Grafica la discretizacion
             %   title               Titulo del grafico
             %   units               Unidades del modelo
@@ -845,6 +852,7 @@ classdef SectionDesigner < BaseModel
             p.addOptional('legend', false);
             p.addOptional('legendCentroid', true);
             p.addOptional('legendMaterial', true);
+            p.addOptional('pbAspect', [1, 1, 1]);
             p.addOptional('limMargin', 0);
             p.addOptional('showdisc', false);
             p.addOptional('title', obj.getName());
@@ -860,6 +868,9 @@ classdef SectionDesigner < BaseModel
             grid on;
             grid minor;
             axis equal;
+            if ~(r.pbAspect(1) == 1 && r.pbAspect(2) == 1 && r.pbAspect(3) == 1)
+                pbaspect(r.pbAspect);
+            end
             addedMaterials = {};
 
             % Agrega los elementos continuos
@@ -1177,10 +1188,13 @@ classdef SectionDesigner < BaseModel
                 px = g{1};
                 py = g{2};
                 mat = obj.contMat{j};
+                ev = obj.contEvent{j};
                 for i = 1:g{5}
                     e_i = eps(px(i), py(i));
                     [f, Ec] = mat.eval(e_i);
-                    obj.contEvent{j}.eval(e0, phix, phiy, e_i, f, Ec, p, mx, my, n);
+                    for k = 1:length(ev)
+                        ev{k}.eval(e0, phix, phiy, e_i, f, Ec, p, mx, my, n);
+                    end
                 end
             end
 
@@ -1193,22 +1207,31 @@ classdef SectionDesigner < BaseModel
 
                 e_i = eps(px, py);
                 [f, Ec] = mat.eval(e_i);
-                obj.singEvent{j}.eval(e0, phix, phiy, e_i, f, Ec, p, mx, my, n);
+                ev = obj.singEvent{j};
+                for k = 1:length(ev)
+                    ev{k}.eval(e0, phix, phiy, e_i, f, Ec, p, mx, my, n);
+                end
             end
 
         end % callEvents function
-        
+
         function resetEvents(obj)
             % resetEvents: Resetea eventos
 
-            for j = 1:obj.contTotal
-                g = obj.contGeom{j};
-                for i = 1:g{5}
-                    obj.contEvent{j}.reset();
+            for i = 1:obj.contTotal
+                g = obj.contGeom{i};
+                ev = obj.contEvent{i};
+                for j = 1:g{5}
+                    for k = 1:length(ev)
+                        ev{k}.reset();
+                    end
                 end
             end
-            for j = 1:obj.singTotal
-                obj.singEvent{j}.reset();
+            for i = 1:obj.singTotal
+                ev = obj.singEvent{i};
+                for k = 1:length(ev)
+                    ev{k}.reset();
+                end
             end
 
         end % resetEvents function
@@ -1573,7 +1596,7 @@ classdef SectionDesigner < BaseModel
             fprintf('\tInercia:\n\t\tIx:\t%e\n\t\tIy:\t%e\n', ix, iy);
             fprintf('\tModulo plastico:\n\t\tWx:\t%e\n\t\tWy:\t%e\n', wx, wy);
             fprintf('\tRadio de giro:\n\t\trx:\t%.3f\n\t\try:\t%.3f\n', rx, ry);
-            fprintf('\tNumero de elementos: %d\n\t\tContinuos:\t\t%d\n\t\tSingulares:\t\t%d\n', ...
+            fprintf('\tNumero de elementos: %d\n\t\tContinuos:\t\t %d\n\t\tSingulares:\t\t %d\n', ...
                 obj.contTotal+obj.singTotal, obj.contTotal, obj.singTotal);
 
             % Obtiene los materiales
