@@ -65,6 +65,13 @@ classdef ManderSteel < GenericMaterial
 
         end % ManderSteel constructor
 
+        function e = e_lim(obj)
+            % e_lim: Retorna los limites de deformacion del material
+
+            e = [-obj.ef, obj.ef];
+
+        end % e_lim function
+
         function [f, E] = eval(obj, e)
             % eval: Retorna la tension y el modulo elastico tangente del
             % material a un cierto nivel de deformacion
@@ -84,7 +91,7 @@ classdef ManderSteel < GenericMaterial
                 elseif (obj.ey <= esi) && (esi < obj.esh) % Rango meseta elastica
                     f(i) = obj.fy * sgn;
                     E(i) = 0;
-                elseif (obj.esh <= esi) && (esi < obj.ef) % Rango endurecimiento
+                elseif (obj.esh <= esi) && (esi <= obj.ef) % Rango endurecimiento
                     p = obj.Esh * (obj.esu - obj.esh) / (obj.fsu - obj.fy);
                     fr = (obj.esu - esi) / (obj.esu - obj.esh); % Fraccion
                     f(i) = obj.fsu + (obj.fy - obj.fsu) * abs(fr)^p;

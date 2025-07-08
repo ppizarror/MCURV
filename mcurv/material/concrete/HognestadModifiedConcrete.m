@@ -57,6 +57,13 @@ classdef HognestadModifiedConcrete < GenericMaterial
 
         end % HognestadModifiedConcrete constructor
 
+        function e = e_lim(obj)
+            % e_lim: Retorna los limites de deformacion del material
+
+            e = [obj.er, obj.eu];
+
+        end % e_lim function
+
         function [f, E] = eval(obj, e)
             % eval: Retorna la tension y el modulo elastico tangente del
             % material a un cierto nivel de deformacion
@@ -77,7 +84,7 @@ classdef HognestadModifiedConcrete < GenericMaterial
                 elseif (0 <= e(i)) && (e(i) < obj.eo) % Compresion, menor a la parabola
                     f(i) = obj.fc * (2 * (e(i) / obj.eo) - (e(i) / obj.eo)^2);
                     E(i) = 2 * obj.fc * (1 / obj.eo - e(i) / (obj.eo^2));
-                elseif (obj.eo <= e(i)) && (e(i) < obj.eu) % Tramo descendente
+                elseif (obj.eo <= e(i)) && (e(i) <= obj.eu) % Tramo descendente
                     f(i) = obj.fc * (1 - 0.15 * (e(i) - obj.eo) / (obj.eu - obj.eo));
                     E(i) = -0.15 * obj.fc / (obj.eu - obj.eo);
                 else % Sobrepaso compresion

@@ -41,6 +41,13 @@ classdef GenericMaterial < BaseModel
 
         end % GenericMaterial constructor
 
+        function e = e_lim(obj)
+            % e_lim: Retorna los limites de deformacion del material
+
+            e = [-1, 1];
+
+        end % e_lim function
+
         function [f, E] = eval(obj, e) %#ok<*INUSL>
             % eval: Retorna la tension y el modulo elastico tangente del
             % material a un cierto nivel de deformacion
@@ -67,10 +74,11 @@ classdef GenericMaterial < BaseModel
             %   plotType        Tipo de plot 'stress','elastic'
             %   units           Unidad del grafico
 
+            e_lims = obj.e_lim(); % Calcula los limites
             p = inputParser;
             p.KeepUnmatched = true;
-            p.addOptional('emax', 1);
-            p.addOptional('emin', -1);
+            p.addOptional('emax', e_lims(2));
+            p.addOptional('emin', e_lims(1));
             p.addOptional('gridColor', [0.5, 0.5, 0.5]);
             p.addOptional('gridLineWidth', 0.5);
             p.addOptional('gridStyle', '--');
@@ -144,10 +152,11 @@ classdef GenericMaterial < BaseModel
             %   file            Archivo en que se guarda la informacion
             %   npoints         Numero de puntos
 
+            e_lims = obj.e_lim(); % Calcula los limites
             p = inputParser;
             p.KeepUnmatched = true;
-            p.addOptional('emax', 1);
-            p.addOptional('emin', -1);
+            p.addOptional('emax', e_lims(2));
+            p.addOptional('emin', e_lims(1));
             p.addOptional('file', '');
             p.addOptional('npoints', 1000);
             parse(p, varargin{:});

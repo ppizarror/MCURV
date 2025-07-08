@@ -55,6 +55,13 @@ classdef ElastoplasticSteel < GenericMaterial
             obj.eu = eu;
 
         end % ElastoplasticSteel constructor
+        
+        function e = e_lim(obj)
+            % e_lim: Retorna los limites de deformacion del material
+
+            e = [-obj.eu, obj.eu];
+
+        end % e_lim function
 
         function [f, E] = eval(obj, e)
             % eval: Retorna la tension y el modulo elastico tangente del
@@ -72,7 +79,7 @@ classdef ElastoplasticSteel < GenericMaterial
                 if (0 <= esi) && (esi < obj.ey) % Rango elastico
                     f(i) = obj.Es1 * esi * sgn;
                     E(i) = obj.Es1;
-                elseif (obj.ey <= esi) && (esi < obj.eu) % Rango post fluencia
+                elseif (obj.ey <= esi) && (esi <= obj.eu) % Rango post fluencia
                     f(i) = (obj.fy + obj.Es2 * (esi - obj.ey)) * sgn;
                     E(i) = obj.Es2;
                 else % Rotura
