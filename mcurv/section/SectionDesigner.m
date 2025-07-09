@@ -1674,7 +1674,7 @@ classdef SectionDesigner < BaseModel
             p.addOptional('i', 1);
             p.addOptional('limMargin', 0);
             p.addOptional('mode', 'xy'); % Interno, 'xy','a'
-            p.addOptional('normaspect', false);
+            p.addOptional('normaspect', true);
             p.addOptional('plot', 'cont');
             p.addOptional('showgrid', true);
             p.addOptional('showmesh', false);
