@@ -204,7 +204,7 @@ classdef SectionAnalysis < BaseModel
                     % Chequeo de estabilidad
                     if j > 1 && (abs(deltaE0Iter(i, j+1)) > abs(deltaE0Iter(i, j)) || (p == 0 && i > 1 && useFixedJacobian == 0))
                         % Fuerza uso de primer Jacobiano a partir del próximo paso
-                        if j > 0.9 * obj.maxiter && useFixedJacobian == 0
+                        if i > 1 && j > 0.9 * obj.maxiter && useFixedJacobian == 0
                             deltaE0Iter(i, :) = 0;
                             useFixedJacobian = i;
                             j = 0; %#ok<FXSET>
@@ -216,6 +216,8 @@ classdef SectionAnalysis < BaseModel
                 end % Iteraciones Newton-Raphson
 
                 if ~valid
+                    section.callEvents(defTotal(i), phix(i), phiy(i), pInt(i), mxInt(i), myInt(i), iters(i));
+                    i = i - 1; %#ok<FXSET>
                     break;
                 end
 
@@ -240,12 +242,10 @@ classdef SectionAnalysis < BaseModel
 
                 % Llama a eventos
                 section.callEvents(defTotal(i), phix(i), phiy(i), pInt(i), mxInt(i), myInt(i), iters(i));
-
             end
 
             % Verifica si las iteraciones fueron completadas
             if i ~= n
-                i = i - 1;
                 fprintf('\nProceso terminado por problemas de material. Ultimo paso valido: %d', i);
             end
 
@@ -342,6 +342,7 @@ classdef SectionAnalysis < BaseModel
             %   sapfactorPhi    Factor multiplicacion archivo
             %   sapfile         Carga un archivo, solo para m:x/y
             %   saplegend       Leyenda del archivo
+            %   saplinewidth    Ancho de linea de grafico archivo
             %   unitlength      Unidad de longitud
             %   unitloadM       Unidad de carga para el momento
             %   unitloadP       Unidad de carga axial
@@ -370,6 +371,7 @@ classdef SectionAnalysis < BaseModel
             p.addOptional('sapfactorPhi', 1);
             p.addOptional('sapfile', ''); % Archivo de sap
             p.addOptional('saplegend', 'SAP2000');
+            p.addOptional('saplinewidth', 1); % Ancho de linea grafico sap
             p.addOptional('unitlength', '1/mm'); % Unidad de largo curvatura
             p.addOptional('unitloadM', 'kN*m'); % Unidad de carga
             p.addOptional('unitloadP', 'kN'); % Unidad de carga
@@ -617,6 +619,30 @@ classdef SectionAnalysis < BaseModel
             hold on;
             leg = {};
 
+            % Carga sap
+            if ~strcmp(r.sapfile, '')
+                sapF = load(r.sapfile);
+                sapPhi = sapF(:, r.sapcolumnPhi) .* r.sapfactorPhi;
+                sapM = sapF(:, r.sapcolumnM) .* r.sapfactorM;
+                sapMint = interp1(sapPhi, sapM, phi, 'linear', 'extrap');
+                if max(sapPhi) < max(phi)
+                    for i = 1:length(phi)
+                        if phi(i) >= max(sapPhi)
+                            phiF = phi(1:i);
+                            sapMintF = sapMint(1:i);
+                            break;
+                        end
+                    end
+                else
+                    phiF = phi;
+                    sapMintF = sapMint;
+                end
+                plot(phiF, sapMintF, '-', 'LineWidth', r.saplinewidth);
+                if ~strcmp(r.saplegend, '')
+                    leg{length(leg)+1} = r.saplegend;
+                end
+            end
+
             % Grafica las curvas
             if strcmp(r.m, 'all')
                 plot(phi, mxInt, '-', 'LineWidth', r.linewidth);
@@ -642,30 +668,6 @@ classdef SectionAnalysis < BaseModel
                 m = mtInt;
             else
                 error('Valor incorrecto parametro m: all,x,y,T');
-            end
-
-            % Carga sap
-            if ~strcmp(r.sapfile, '')
-                sapF = load(r.sapfile);
-                sapPhi = sapF(:, r.sapcolumnPhi) .* r.sapfactorPhi;
-                sapM = sapF(:, r.sapcolumnM) .* r.sapfactorM;
-                sapMint = interp1(sapPhi, sapM, phi, 'linear', 'extrap');
-                if max(sapPhi) < max(phi)
-                    for i = 1:length(phi)
-                        if phi(i) >= max(sapPhi)
-                            phiF = phi(1:i);
-                            sapMintF = sapMint(1:i);
-                            break;
-                        end
-                    end
-                else
-                    phiF = phi;
-                    sapMintF = sapMint;
-                end
-                plot(phiF, sapMintF, '-', 'LineWidth', r.linewidth);
-                if ~strcmp(r.saplegend, '')
-                    leg{length(leg)+1} = r.saplegend;
-                end
             end
 
             % Ajusta el grafico
@@ -702,7 +704,10 @@ classdef SectionAnalysis < BaseModel
                         continue;
                     end
                     for j = 1:length(phi) - 1
-                        if phi(j) <= phiobj && phiobj <= phi(j+1)
+                        if phi(j) <= phiobj && isnan(m(j+1))
+                            mi = m(j);
+                            break;
+                        elseif phi(j) <= phiobj && phiobj <= phi(j+1)
                             if strcmp(r.vecphiInterp, 'min')
                                 mi = min(m(j), m(j+1));
                             elseif strcmp(r.vecphiInterp, 'max')
@@ -714,6 +719,7 @@ classdef SectionAnalysis < BaseModel
                             else
                                 error('Interpolacion vecphiInterp desconocida, valores posibles: min,max,med,sqrt');
                             end
+                            break;
                         end
                     end
 
@@ -724,7 +730,7 @@ classdef SectionAnalysis < BaseModel
                         else
                             phiname = '';
                         end
-                        fprintf('\tphi %e: Momento %f %s\n', phiobj, mi, r.unitloadM);
+                        fprintf('\tphi (%d) %e: Momento %f %s\n', kphi, phiobj, mi, r.unitloadM);
                         plot([phiobj, phiobj], [mmin, mi], '--', ...
                             'Color', r.vecphiColor{i}, 'LineWidth', r.vecphiLw, ...
                             'DisplayName', sprintf('%s\\phi_%d=%.2e, M_%d=%.1f', phiname, kphi, phiobj, kphi, mi));
