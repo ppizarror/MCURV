@@ -1,10 +1,7 @@
-<h1 align="center">
-  <img alt="MCURV" src="https://res.ppizarror.com/other/matlab.png" width="200px" height="200px" />
-  <br /><br />
-  MCURV</h1>
+<h1 align="center">MCURV</h1>
 <p align="center">Genera el diagrama de momento curvatura para secciones prismáticas de cualquier tipo de material, sometidas a un momento y compresión axial</p>
-<div align="center"><a href="https://ppizarror.com"><img alt="@ppizarror" src="https://res.ppizarror.com/badges/autor.svg" /></a>
-<a href="https://opensource.org/licenses/MIT"><img alt="MIT" src="https://res.ppizarror.com/badges/licenciamit.svg" /></a>
+<div align="center"><a href="https://ppizarror.com"><img alt="@ppizarror" src="https://img.shields.io/badge/Autor-Pablo%20Pizarro%20R.-9f9f9f" /></a>
+<a href="https://opensource.org/licenses/MIT"><img alt="MIT" src="https://img.shields.io/badge/Licencia-MIT-007ec6" /></a>
 </div><br />
 
 Calcula diagramas de momento curvatura de secciones de cualquier geometría usando la metodología numérica Newton Rhapson. Permite el uso de materiales no lineales.
@@ -43,12 +40,12 @@ La documentación del proyecto se puede encontrar en [https://ppizarror.com/MCUR
 
 | Modelo | Resultado |
 |:---:|:---:|
-| ![ADVANCED-SHAPES](https://res.ppizarror.com/images/mcurv/advshapes-1.png)  | ![ADVANCED-SHAPES](https://res.ppizarror.com/images/mcurv/advshapes-2.png) |
-| ![SIMPLE-BEAM](https://res.ppizarror.com/images/mcurv/simplebeam-1.png)  | ![SIMPLE-BEAM](https://res.ppizarror.com/images/mcurv/simplebeam-2.png) |
-| ![CINTAC-H](https://res.ppizarror.com/images/mcurv/cintac-model1.png)  | ![CINTAC-H](https://res.ppizarror.com/images/mcurv/cintac-model2.png) |
-| ![BOXBEAM](https://res.ppizarror.com/images/mcurv/boxbeam-1.png)  | ![BOXBEAM](https://res.ppizarror.com/images/mcurv/boxbeam-2.png) |
-| ![WALL-T](https://res.ppizarror.com/images/mcurv/wallt-1.png)  | ![ADVANCED-SHAPES](https://res.ppizarror.com/images/mcurv/wallt-2.png) |
-| ![CIRCLE](https://res.ppizarror.com/images/mcurv/circle-1.png)  | ![CIRCLE](https://res.ppizarror.com/images/mcurv/circle-2.png) |
+| ![ADVANCED-SHAPES](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/advshapes-1.png)  | ![ADVANCED-SHAPES](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/advshapes-2.png) |
+| ![SIMPLE-BEAM](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/simplebeam-1.png)  | ![SIMPLE-BEAM](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/simplebeam-2.png) |
+| ![CINTAC-H](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/cintac-model1.png)  | ![CINTAC-H](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/cintac-model2.png) |
+| ![BOXBEAM](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/boxbeam-1.png)  | ![BOXBEAM](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/boxbeam-2.png) |
+| ![WALL-T](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/wallt-1.png)  | ![ADVANCED-SHAPES](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/wallt-2.png) |
+| ![CIRCLE](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/circle-1.png)  | ![CIRCLE](https://raw.githubusercontent.com/ppizarror/MCURV/master/.github/images/circle-2.png) |
 
 ## Autor
 
